@@ -90,6 +90,15 @@ def _build(config):
     return pkg_name
 
 
+def _get_from_stack(stack, source, key):
+    value = None
+    for p in stack[source + 's']:
+        if p[source + 'Key'] == key:
+            value = p[source + 'Value']
+            break
+    return value
+
+
 @main.command()
 def build():
     """Build lambda package."""
@@ -122,10 +131,8 @@ def deploy(template):
     except botocore.exceptions.ClientError:
         pass
     if previous_deployment:
-        for p in previous_deployment['Parameters']:
-            if p['ParameterKey'] == 'LambdaS3Bucket':
-                bucket = p['ParameterValue']
-                break
+        bucket = _get_from_stack(previous_deployment, 'Parameter',
+                                 'LambdaS3Bucket')
     else:
         bucket = config['name']
         try:
@@ -192,11 +199,12 @@ def deploy(template):
         if previous_deployment:
             # the update succeeded, so it is safe to delete the lambda package
             # used in the previous deployment
-            for p in previous_deployment['Parameters']:
-                if p['ParameterKey'] == 'LambdaS3Key':
-                    old_pkg = p['ParameterValue']
-                    break
+            old_pkg = _get_from_stack(previous_deployment, 'Parameter',
+                                      'LambdaS3Key')
             s3.delete_object(Bucket=bucket, Key=old_pkg)
+    stack = cfn.describe_stacks(StackName=config['name'])['Stacks'][0]
+    endpoint = _get_from_stack(stack, 'Output', 'endpoint')
+    print('Your API is now live at ' + endpoint)
 
 
 @main.command()
