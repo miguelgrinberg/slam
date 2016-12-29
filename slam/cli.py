@@ -208,6 +208,30 @@ def deploy(template):
 
 
 @main.command()
+def delete():
+    """Delete an API."""
+    config = _load_config()
+
+    s3 = boto3.client('s3')
+    cfn = boto3.client('cloudformation')
+
+    stack = cfn.describe_stacks(StackName=config['name'])['Stacks'][0]
+    bucket = _get_from_stack(stack, 'Parameter', 'LambdaS3Bucket')
+    old_pkg = _get_from_stack(stack, 'Parameter', 'LambdaS3Key')
+
+    print('Deleting API...')
+    cfn.delete_stack(StackName=config['name'])
+    try:
+        s3.delete_object(Bucket=bucket, Key=old_pkg)
+        s3.delete_bucket(Bucket=bucket)
+    except botocore.exceptions.ClientError:
+        print('The API has been deleted, but the S3 bucket "{}" failed to '
+              'delete.'.format(bucket))
+    else:
+        print('The API has been deleted.')
+
+
+@main.command()
 def template():
     """Print the default Cloudformation deployment template."""
     template = os.path.join(os.path.dirname(__file__), 'cfn.yaml')
