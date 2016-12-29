@@ -44,6 +44,8 @@ def lambda_handler(event, context):
         'lambda.event': event,
         'lambda.context': context,
     }
+    for h, v in headers.items():
+        environ['HTTP_' + h.upper().replace('-', '_')] = v
 
     status_headers = [None, None]
     body = []
