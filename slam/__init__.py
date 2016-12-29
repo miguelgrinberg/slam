@@ -1,1 +1,1 @@
-from handler import lambda_handler
+from .handler import lambda_handler

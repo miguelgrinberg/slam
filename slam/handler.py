@@ -14,16 +14,17 @@ def lambda_handler(event, context):
     formatted according to the proxy integration requirements.
     """
     query_string = None
-    if 'queryStringParameters' in event['input']:
+    if event.get('queryStringParameters') is not None:
         query_string = '&'.join(
             [quote(k) + '=' + quote(v)
-             for k, v in event['input']['queryStringParameters'].items()])
-    headers = event['input'].get('headers', {})
-    body = event['input'].get('body').encode('utf-8')
+             for k, v in event['queryStringParameters'].items()])
+    headers = event.get('headers') or {}
+    body = event.get('body').encode('utf-8') \
+        if event.get('body') is not None else None
     environ = {
-        'REQUEST_METHOD': event['input'].get('httpMethod', 'GET'),
+        'REQUEST_METHOD': event.get('httpMethod', 'GET'),
         'SCRIPT_NAME': '',
-        'PATH_INFO': event['input'].get('path', '/'),
+        'PATH_INFO': event.get('path', '/'),
         'QUERY_STRING': query_string,
         'SERVER_NAME': '',
         'SERVER_PORT': 80,
@@ -66,6 +67,6 @@ def lambda_handler(event, context):
     headers = status_headers[1]
     return {
         'statusCode': int(status[0]),
-        'headers': headers,
+        'headers': {h[0]: h[1] for h in headers},
         'body': b''.join(body)
     }
