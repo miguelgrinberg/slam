@@ -124,9 +124,14 @@ def _get_cfn_template(config):
     with open(template_file) as f:
         template = f.read()
     stages = config['stage_environments'].keys()
+    vars = config['stage_environments'].copy()
+    for s in config['stage_environments'].keys():
+        vars[s] = config['environment'].copy()
+        vars[s].update(config['stage_environments'][s])
+
     template = jinja2.Environment(
         lstrip_blocks=True, trim_blocks=True).from_string(template).render(
-            stages=stages, devstage=config['devstage'])
+            stages=stages, devstage=config['devstage'], vars=vars)
     return template
 
 

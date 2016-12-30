@@ -1,4 +1,5 @@
 from io import BytesIO
+import os
 import sys
 try:
     from urllib import quote
@@ -21,6 +22,8 @@ def lambda_handler(event, context):
     headers = event.get('headers') or {}
     body = event.get('body').encode('utf-8') \
         if event.get('body') is not None else None
+
+    # create a WSGI environment for this request
     environ = {
         'REQUEST_METHOD': event.get('httpMethod', 'GET'),
         'SCRIPT_NAME': '',
@@ -44,8 +47,14 @@ def lambda_handler(event, context):
         'lambda.event': event,
         'lambda.context': context,
     }
+
+    # add any headers that came with the request
     for h, v in headers.items():
         environ['HTTP_' + h.upper().replace('-', '_')] = v
+
+    # load stage variables in the environment
+    for k, v in (event.get('stageVariables') or {}).items():
+        os.environ[k] = v
 
     status_headers = [None, None]
     body = []
@@ -57,6 +66,7 @@ def lambda_handler(event, context):
         status_headers[:] = [status, headers]
         return write
  
+    # invoke the WSGI app
     app_iter = lambda_handler.app(environ, start_response)
     try:
         for item in app_iter:
@@ -65,6 +75,7 @@ def lambda_handler(event, context):
         if hasattr(app_iter, 'close'):
             app_iter.close()
 
+    # format the response as required by the api gateway proxy integration
     status = status_headers[0].split()
     headers = status_headers[1]
     return {

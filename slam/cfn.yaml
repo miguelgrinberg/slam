@@ -86,7 +86,7 @@ Resources:
                 responses:
                   default:
                     statusCode: "200"
-                uri: !Join ["", ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt ["Function", "Arn"], ":${stageVariables.alias}", "/invocations"]]
+                uri: !Join ["", ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt ["Function", "Arn"], ":${stageVariables.STAGE}", "/invocations"]]
                 passthroughBehavior: "when_no_match"
                 httpMethod: "POST"
                 type: "aws_proxy"
@@ -102,7 +102,7 @@ Resources:
                 responses:
                   default:
                     statusCode: "200"
-                uri: !Join ["", ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt ["Function", "Arn"], ":${stageVariables.alias}", "/invocations"]]
+                uri: !Join ["", ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt ["Function", "Arn"], ":${stageVariables.STAGE}", "/invocations"]]
                 passthroughBehavior: "when_no_match"
                 httpMethod: "POST"
                 type: "aws_proxy"
@@ -126,7 +126,10 @@ Resources:
       StageName: {{stage}}
       StageDescription:
         Variables:
-          alias: {{stage}}
+          STAGE: "{{stage}}"
+          {% for v in vars[stage] %}
+          {{v}}: "{{vars[stage][v]}}"
+          {% endfor %}
 
   {{stage|title}}APILambdaPermission:
     Type: "AWS::Lambda::Permission"
