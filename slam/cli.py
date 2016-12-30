@@ -119,10 +119,15 @@ def _get_from_stack(stack, source, key):
     return value
 
 
-def _get_cfn_template(config):
-    template_file = os.path.join(os.path.dirname(__file__), 'cfn.yaml')
+def _get_cfn_template(config, raw=False, custom_template=None):
+    if custom_template:
+        template_file = custom_template
+    else:
+        template_file = os.path.join(os.path.dirname(__file__), 'cfn.yaml')
     with open(template_file) as f:
         template = f.read()
+    if raw:
+        return template
     stages = config['stage_environments'].keys()
     vars = config['stage_environments'].copy()
     for s in config['stage_environments'].keys():
@@ -157,10 +162,13 @@ def _print_status(config):
                     if s != t and not f[t]['v'].startswith('$LATEST') and f[s]['s'] == f[t]['s']:
                         f[s]['v'] += '/' + f[t]['v']
                         break
+        for s in config['stage_environments'].keys():
+            if f[s]['v'].startswith('$LATEST') and config['devstage'] != s:
+                f[s]['v'] = 'None'
 
         print('Your API is deployed!')
         for s in config['stage_environments'].keys():
-            print('  {}({}): {}'.format(s, f[s]['v'], _get_from_stack(
+            print('  {}/{}: {}'.format(s, f[s]['v'], _get_from_stack(
                 stack, 'Output', s.title() + 'Endpoint')))
 
 
@@ -340,7 +348,9 @@ def status():
 
 
 @main.command()
-def template():
+@climax.argument('--raw', action='store_true',
+                 help='Return template before it is processed')
+def template(raw):
     """Print the default Cloudformation deployment template."""
     config = _load_config()
-    print(_get_cfn_template(config))
+    print(_get_cfn_template(config, raw=raw))
