@@ -21,7 +21,8 @@ setup(
     install_requires=[
         'lambda_uploader',
         'boto',
-        'climax'
+        'climax',
+        'jinja2'
     ],
     tests_require=[],
     test_suite='test_slam',

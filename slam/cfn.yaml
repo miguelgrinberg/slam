@@ -30,11 +30,15 @@ Parameters:
     Description: "A description of the API."
     Default: ""
 
-  APIBasePath:
+  {% for stage in stages %}
+  {% if stage != devstage %}
+  {{stage|title}}Version:
     Type: "String"
-    Description: "The base path of the deployed API."
-    Default: "api"
+    Description: "The lambda version number associated with the {{stage}} stage."
+    Default: "$LATEST"
 
+  {% endif %}
+  {% endfor %}
 Resources:
   FunctionExecutionRole:
     Type: "AWS::IAM::Role"
@@ -82,7 +86,7 @@ Resources:
                 responses:
                   default:
                     statusCode: "200"
-                uri: !Join ["", ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt ["Function", "Arn"], "/invocations"]]
+                uri: !Join ["", ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt ["Function", "Arn"], ":${stageVariables.alias}", "/invocations"]]
                 passthroughBehavior: "when_no_match"
                 httpMethod: "POST"
                 type: "aws_proxy"
@@ -98,25 +102,49 @@ Resources:
                 responses:
                   default:
                     statusCode: "200"
-                uri: !Join ["", ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt ["Function", "Arn"], "/invocations"]]
+                uri: !Join ["", ["arn:aws:apigateway:", !Ref "AWS::Region", ":lambda:path/2015-03-31/functions/", !GetAtt ["Function", "Arn"], ":${stageVariables.alias}", "/invocations"]]
                 passthroughBehavior: "when_no_match"
                 httpMethod: "POST"
                 type: "aws_proxy"
 
-  APIDeployment:
+  {% for stage in stages %}
+  {{stage|title}}FunctionAlias:
+    Type: "AWS::Lambda::Alias"
+    Properties:
+      Name: {{stage}}
+      FunctionName: !Ref Function
+      {% if stage != devstage %}
+      FunctionVersion: !Ref {{stage|title}}Version
+      {% else %}
+      FunctionVersion: "$LATEST"
+      {% endif %}
+
+  {{stage|title}}APIDeployment:
     Type: "AWS::ApiGateway::Deployment"
     Properties:
       RestApiId: !Ref API
-      StageName: !Ref APIBasePath
+      StageName: {{stage}}
+      StageDescription:
+        Variables:
+          alias: {{stage}}
 
-  APILambdaPermission:
+  {{stage|title}}APILambdaPermission:
     Type: "AWS::Lambda::Permission"
+    DependsOn:
+      - "{{stage|title}}FunctionAlias"
     Properties:
       Action: "lambda:InvokeFunction"
-      FunctionName: !GetAtt ["Function", "Arn"]
+      FunctionName: !Ref {{stage|title}}FunctionAlias
       Principal: "apigateway.amazonaws.com"
       SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref "API", "/*/*/*"]]
 
+  {% endfor %}
 Outputs:
-  endpoint:
-      Value: !Join ["", ["https://", !Ref API, ".execute-api.", !Ref "AWS::Region", ".amazonaws.com/", !Ref APIBasePath]]
+  FunctionArn:
+    Value: !GetAtt ["Function", "Arn"]
+
+  {% for stage in stages %}
+  {{stage|title}}Endpoint:
+      Value: !Join ["", ["https://", !Ref API, ".execute-api.", !Ref "AWS::Region", ".amazonaws.com/{{stage}}"]]
+
+  {% endfor %}
