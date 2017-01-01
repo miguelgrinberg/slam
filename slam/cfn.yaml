@@ -53,6 +53,18 @@ Resources:
             Action: "sts:AssumeRole"
       ManagedPolicyArns:
         - "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+      {% if dynamodb_tables %}
+      Policies:
+        - PolicyName: "DynamoDBPolicy"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "dynamodb:*"
+                Resource:
+                  - "*"
+      {% endif %}
 
   Function:
     Type: "AWS::Lambda::Function"
@@ -141,6 +153,99 @@ Resources:
       Principal: "apigateway.amazonaws.com"
       SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref "API", "/*/*/*"]]
 
+  {% for name, table in dynamodb_tables.items() %}
+  {{stage|title}}DynamoDBTable{{loop.index}}:
+    Type: "AWS::DynamoDB::Table"
+    Properties:
+      TableName: "{{stage}}.{{name}}"
+      AttributeDefinitions:
+        {% for attr in table.attributes %}
+        - AttributeName: "{{attr[0]}}"
+          AttributeType: "{{attr[1]}}"
+        {% endfor %}
+      KeySchema:
+        {% if table.key is iterable and table.key is not string %}
+        {% for key in table.key %}
+        - AttributeName: "{{key}}"
+          KeyType: "{% if loop.index == 1 %}HASH{% else %}RANGE{% endif %}"
+        {% endfor %}
+        {% else %}
+        - AttributeName: "{{table.key}}"
+          KeyType: "HASH"
+        {% endif %}
+      ProvisionedThroughput:
+        {% if table.provisioned_throughput %}
+        ReadCapacityUnits: {{table.provisioned_throughput[0]}}
+        WriteCapacityUnits: {{table.provisioned_throughput[1]}}
+        {% else %}
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+        {% endif %}
+      {% if table.local_secondary_indexes %}
+      LocalSecondaryIndexes:
+        {% for name, index in table.local_secondary_indexes.items() %}
+        - IndexName: "{{name}}"
+          KeySchema:
+            {% if table.key is iterable and table.key is not string %}
+            - AttributeName: "{{table.key[0]}}"
+            {% else %}
+            - AttributeName: "{{table.key}}"
+            {% endif %}
+              KeyType: "HASH"
+            - AttributeName: "{{index.key}}"
+              KeyType: "RANGE"
+          Projection:
+            {% if not index.projection %}
+            ProjectionType: "KEYS_ONLY"
+            {% elif index.projection == "all" %}
+            ProjectionType: "ALL"
+            {% else %}
+            ProjectionType: "INCLUDE"
+            NonKeyAttributes:
+              {% for attr in index.projection %}
+              - "{{attr}}"
+              {% endfor %}
+            {% endif %}
+        {% endfor %}
+      {% endif %}
+      {% if table.global_secondary_indexes %}
+      GlobalSecondaryIndexes:
+        {% for name, index in table.global_secondary_indexes.items() %}
+        - IndexName: "{{name}}"
+          KeySchema:
+            {% if index.key is iterable and index.key is not string %}
+            {% for key in index.key %}
+            - AttributeName: "{{key}}"
+              KeyType: "{% if loop.index == 1 %}HASH{% else %}RANGE{% endif %}"
+            {% endfor %}
+            {% else %}
+            - AttributeName: "{{index.key}}"
+              KeyType: "HASH"
+            {% endif %}
+          Projection:
+            {% if not index.projection %}
+            ProjectionType: "KEYS_ONLY"
+            {% elif index.projection == "all" %}
+            ProjectionType: "ALL"
+            {% else %}
+            ProjectionType: "INCLUDE"
+            NonKeyAttributes:
+              {% for attr in index.projection %}
+              - "{{attr}}"
+              {% endfor %}
+            {% endif %}
+          ProvisionedThroughput:
+            {% if index.provisioned_throughput %}
+            ReadCapacityUnits: {{index.provisioned_throughput[0]}}
+            WriteCapacityUnits: {{index.provisioned_throughput[1]}}
+            {% else %}
+            ReadCapacityUnits: 1
+            WriteCapacityUnits: 1
+            {% endif %}
+        {% endfor %}
+      {% endif %}
+
+  {% endfor %}
   {% endfor %}
 Outputs:
   FunctionArn:

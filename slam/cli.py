@@ -4,6 +4,7 @@ from datetime import datetime
 import os
 import string
 import random
+import re
 import sys
 
 import boto3
@@ -55,6 +56,33 @@ config = {{
         # insert variables common to all stages here
     }},
     'stage_environments': {{{stage_environments}
+    }},
+    'dynamodb_tables': {{
+        #'table_name': {{
+        #    'attributes': [
+        #        ('string_attribute', 'S'),
+        #        ('number_attribute', 'N'),
+        #        ('binary_attribute', 'B')
+        #    ],
+        #    # use one of the following two for single or compound keys
+        #    'key': 'hash_attribute_name',
+        #    'key': ['hash_attribute_name', 'range_attribute_name'],
+        #    'provisioned_throughput': [1, 1],
+        #    'local_secondary_indexes': {{
+        #        'index_name': {{
+        #            'keys': ['hash_attribute_name', 'range_attribute_name'],
+        #            'project': ['projected_attribute_name'],
+        #            'provisioned_throughput': [1, 1]
+        #        }}
+        #    }},
+        #    'global_secondary_indexes': {{
+        #        'index_name': {{
+        #            'key': ['hash_attribute_name', 'range_attribute_name'],
+        #            'project': ['projected_attribute_name'],
+        #            'provisioned_throughput': [1, 1]
+        #        }}
+        #    }}
+        #}}
     }}
 }}
 
@@ -71,7 +99,10 @@ if os.environ.get('LAMBDA_TASK_ROOT'):
 
     module, app = wsgi_app.split(':')
     if not name:
-        name = module
+        name = module.replace('_', '-')
+    if not re.match('^[a-zA-Z][-a-zA-Z0-9]*$', name):
+        raise ValueError('The name {} is invalid, only letters, numbers and '
+                         'dashes are allowed.'.format(name))
     name += '-' + ''.join(random.choice(
             string.ascii_lowercase + string.digits) for _ in range(6))
     stages = [s.strip() for s in stages.split(',')]
@@ -133,10 +164,10 @@ def _get_cfn_template(config, raw=False, custom_template=None):
     for s in config['stage_environments'].keys():
         vars[s] = config['environment'].copy()
         vars[s].update(config['stage_environments'][s])
-
     template = jinja2.Environment(
         lstrip_blocks=True, trim_blocks=True).from_string(template).render(
-            stages=stages, devstage=config['devstage'], vars=vars)
+            stages=stages, devstage=config['devstage'], vars=vars,
+            dynamodb_tables=config.get('dynamodb_tables', {}))
     return template
 
 
@@ -185,12 +216,14 @@ def build():
 @main.command()
 @climax.argument('--template', help='Custom cloudformation template to '
                  'deploy.')
-@climax.argument('--package', help='Custom lambda zip package to deploy.')
+@climax.argument('--lambda-package', help='Custom lambda zip package to deploy.')
+@climax.argument('--no-lambda', action='store_true',
+                 help='Do no deploy a new lambda.')
 @climax.argument('--stage',
                  help='Stage to deploy. Defaults to the development stage.')
 @climax.argument('--version',
                  help='Stage or numeric version to set the stage to.')
-def deploy(template, package, stage, version):
+def deploy(template, lambda_package, no_lambda, stage, version):
     """Deploy API to AWS."""
     config = _load_config()
 
@@ -216,13 +249,14 @@ def deploy(template, package, stage, version):
         pass
 
     built_package = False
-    if package is None and stage == config['devstage']:
+    if lambda_package is None and not no_lambda and \
+            stage == config['devstage']:
         print("Building lambda package...")
-        package = _build(config)
+        lambda_package = _build(config)
         built_package = True
-    elif stage != config['devstage']:
-        package = _get_from_stack(previous_deployment, 'Parameter',
-                                  'LambdaS3Key')
+    else:
+        lambda_package = _get_from_stack(previous_deployment, 'Parameter',
+                                         'LambdaS3Key')
 
     if previous_deployment:
         bucket = _get_from_stack(previous_deployment, 'Parameter',
@@ -240,11 +274,11 @@ def deploy(template, package, stage, version):
                 'LocationConstraint': region})
 
     # upload pkg to s3
-    if stage == config['devstage']:
-        s3.upload_file(package, bucket, package)
+    if built_package:
+        s3.upload_file(lambda_package, bucket, lambda_package)
         if built_package:
             # we created the package, so now that is on S3 we can delete it
-            os.remove(package)
+            os.remove(lambda_package)
 
     if template is None:
         template_body = _get_cfn_template(config)
@@ -254,7 +288,7 @@ def deploy(template, package, stage, version):
 
     parameters = [
         {'ParameterKey': 'LambdaS3Bucket', 'ParameterValue': bucket},
-        {'ParameterKey': 'LambdaS3Key', 'ParameterValue': package},
+        {'ParameterKey': 'LambdaS3Key', 'ParameterValue': lambda_package},
         {'ParameterKey': 'LambdaTimeout',
          'ParameterValue': str(config['timeout'])},
         {'ParameterKey': 'LambdaMemorySize',
@@ -271,6 +305,7 @@ def deploy(template, package, stage, version):
         if s != stage:
             v = _get_from_stack(previous_deployment, 'Parameter', param) \
                 if previous_deployment else '$LATEST'
+            v = v or '$LATEST'
         else:
             if version.isdigit():
                 v = str(version)
@@ -300,7 +335,7 @@ def deploy(template, package, stage, version):
         waiter.wait(StackName=config['name'])
     except botocore.exceptions.ClientError:
         # the update failed, so we remove the lambda package from S3
-        s3.delete_object(Bucket=bucket, Key=package)
+        s3.delete_object(Bucket=bucket, Key=lambda_package)
         raise
     else:
         if previous_deployment:
