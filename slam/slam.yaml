@@ -58,7 +58,7 @@ dynamodb_tables:
   #   global_secondary_indexes:
   #     myindex2:
   #       key: ["age", "name"]
-  #       project: []
+  #       project: "all"
   #       provisioned_throughput: [1, 1]
   {% for table in tables %}
   {{table}}:

@@ -186,14 +186,10 @@ Resources:
         {% for name, index in table.local_secondary_indexes.items() %}
         - IndexName: "{{name}}"
           KeySchema:
-            {% if table.key is iterable and table.key is not string %}
-            - AttributeName: "{{table.key[0]}}"
-            {% else %}
-            - AttributeName: "{{table.key}}"
-            {% endif %}
-              KeyType: "HASH"
+            {% for key in index.key %}
             - AttributeName: "{{index.key}}"
-              KeyType: "RANGE"
+              KeyType: "{% if loop.index == 1 %}HASH{% else %}RANGE{% endif %}"
+            {% endfor %}
           Projection:
             {% if not index.projection %}
             ProjectionType: "KEYS_ONLY"
