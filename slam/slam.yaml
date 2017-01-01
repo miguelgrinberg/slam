@@ -1,0 +1,69 @@
+---
+# slam configuration file
+
+# the name and description of the project
+name: "{{name}}"
+description: "{{description}}"
+
+# S3 bucket where lambda packages are stored
+bucket: "{{bucket}}"
+
+# timeout in seconds for the lambda function
+timeout: {{timeout}}
+
+# memory in MB for the lambda function
+memory: {{memory}}
+
+# location of the requirements file for the project
+requirements: "{{requirements}}"
+
+# the name of the development stage
+devstage: "{{devstage}}"
+
+# environment variables common to all stages
+environment:
+  IN_LAMBDA: "1"
+  # add any additional environment variables here
+
+# environment variables specific to each stage
+stage_environments:
+  {% for stage in stages %}
+  {{stage}}:
+    STAGE: "{{stage}}"
+    # add any additional stage variables here
+  {% endfor %}
+
+# dynamodb tables
+dynamodb_tables:
+  # example of a simple table:
+  # mytable:
+  #   attributes:
+  #     id: "S"
+  #   key: "id"
+  #   provisioned_throughput: [1, 1]
+  #
+  # a more complex example:
+  # mytable2:
+  #   attributes:
+  #     id: "S"
+  #     name: "S"
+  #     age: "N"
+  #   key: ["id", "name"]
+  #   provisioned_throughput: [1, 1]
+  #   local_secondary_indexes:
+  #     myindex:
+  #       key: ["id", "age"]
+  #       project:
+  #         - "name"
+  #   global_secondary_indexes:
+  #     myindex2:
+  #       key: ["age", "name"]
+  #       project: []
+  #       provisioned_throughput: [1, 1]
+  {% for table in tables %}
+  {{table}}:
+    attributes:
+      id: "S"
+    key: "id"
+    provisioned_throughput: [1, 1]
+  {% endfor %}

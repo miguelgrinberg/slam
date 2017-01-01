@@ -89,10 +89,8 @@ def update_task(task_id):
     data = request.get_json()
     if not data:
         abort(400)
-    if 'title' in data:
-        task.title = data['title']
-    if 'description' in data:
-        task.description = data['description']
+    task.title = data.get('title', task.title or '')
+    task.description = data.get('description', task.description or '')
     if 'done' in data:
         task.done = True if data['done'] in ['true', 'True', 'yes', 'Yes'] \
             else False

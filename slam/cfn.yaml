@@ -159,9 +159,9 @@ Resources:
     Properties:
       TableName: "{{stage}}.{{name}}"
       AttributeDefinitions:
-        {% for attr in table.attributes %}
-        - AttributeName: "{{attr[0]}}"
-          AttributeType: "{{attr[1]}}"
+        {% for attr, type in table.attributes.items() %}
+        - AttributeName: "{{attr}}"
+          AttributeType: "{{type}}"
         {% endfor %}
       KeySchema:
         {% if table.key is iterable and table.key is not string %}

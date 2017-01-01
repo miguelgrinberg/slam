@@ -22,7 +22,8 @@ setup(
         'lambda_uploader',
         'boto',
         'climax',
-        'jinja2'
+        'jinja2',
+        'pyyaml'
     ],
     tests_require=[],
     test_suite='test_slam',
