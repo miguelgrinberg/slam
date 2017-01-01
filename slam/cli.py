@@ -120,6 +120,8 @@ def _get_from_stack(stack, source, key):
 def _get_cfn_template(config, raw=False, custom_template=None):
     if custom_template:
         template_file = custom_template
+    elif config.get('cfn_template'):
+        template_file = config['cfn_template']
     else:
         template_file = os.path.join(os.path.dirname(__file__), 'cfn.yaml')
     with open(template_file) as f:

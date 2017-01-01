@@ -5,6 +5,10 @@
 name: "{{name}}"
 description: "{{description}}"
 
+# custom cloudformation template
+# (leave unset unless you know what you are doing)
+cfn_template:
+
 # S3 bucket where lambda packages are stored
 bucket: "{{bucket}}"
 
