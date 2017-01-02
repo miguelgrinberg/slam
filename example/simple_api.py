@@ -63,13 +63,13 @@ def get_tasks():
     return jsonify({'tasks': [make_public_task(task) for task in Task.scan()]})
 
 
-@app.route('/todo/api/v1.0/tasks/<task_id>', methods=['GET'])
+@app.route('/tasks/<task_id>', methods=['GET'])
 @auth.login_required
 def get_task(task_id):
     return jsonify({'task': make_public_task(Task.get(task_id))})
 
 
-@app.route('/todo/api/v1.0/tasks', methods=['POST'])
+@app.route('/tasks', methods=['POST'])
 @auth.login_required
 def create_task():
     data = request.get_json()
@@ -82,7 +82,7 @@ def create_task():
     return jsonify({'task': make_public_task(task)}), 201
 
 
-@app.route('/todo/api/v1.0/tasks/<task_id>', methods=['PUT'])
+@app.route('/tasks/<task_id>', methods=['PUT'])
 @auth.login_required
 def update_task(task_id):
     task = Task.get(task_id)
@@ -98,7 +98,7 @@ def update_task(task_id):
     return jsonify({'task': make_public_task(task)})
 
 
-@app.route('/todo/api/v1.0/tasks/<task_id>', methods=['DELETE'])
+@app.route('/tasks/<task_id>', methods=['DELETE'])
 @auth.login_required
 def delete_task(task_id):
     task = Task.get(task_id)
