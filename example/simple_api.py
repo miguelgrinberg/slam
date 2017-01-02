@@ -57,7 +57,7 @@ def make_public_task(task):
     }
 
 
-@app.route('/todo/api/v1.0/tasks', methods=['GET'])
+@app.route('/tasks', methods=['GET'])
 @auth.login_required
 def get_tasks():
     return jsonify({'tasks': [make_public_task(task) for task in Task.scan()]})
