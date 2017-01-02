@@ -5,6 +5,8 @@ import os
 import string
 import random
 import re
+import subprocess
+import shutil
 import sys
 
 import boto3
@@ -95,16 +97,45 @@ def _load_config():
         raise RuntimeError('Config file not found. Did you run "slam init"?')
 
 
-def _build(config):
+def _run_command(cmd):
+    proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT)
+    out, err = proc.communicate()
+    if proc.returncode != 0:
+        print(out)
+        raise(RuntimeError('Command failed with exit code {}.'.format(
+            proc.returncode)))
+
+
+def _build(config, rebuild_deps=False):
     package = datetime.utcnow().strftime("lambda_package.%Y%m%d_%H%M%S.zip")
-    ignore = ['\\.pyc$']
+    ignore = ['\.slam\/venv\/.*$', '\.pyc$']
     if os.environ.get('VIRTUAL_ENV'):
         # make sure the currently active virtualenv is not included in the pkg
         venv = os.path.relpath(os.environ['VIRTUAL_ENV'], os.getcwd())
         if not venv.startswith('.'):
             ignore.append(venv.replace('/', '\/') + '\/.*$')
-    build_package('.', config['requirements'], ignore=ignore,
-                  zipfile_name=package)
+
+    # create .slam directory if it doesn't exist yet
+    if not os.path.exists('.slam'):
+        os.mkdir('.slam')
+
+    # create or update virtualenv
+    if rebuild_deps:
+        if os.path.exists('.slam/venv'):
+            shutil.rmtree('.slam/venv')
+    if not os.path.exists('.slam/venv'):
+        _run_command('virtualenv .slam/venv')
+    _run_command('.slam/venv/bin/pip install -r ' + config['requirements'])
+
+    # build lambda package
+    build_package('.', config['requirements'], virtualenv='.slam/venv',
+                  ignore=ignore, zipfile_name=package)
+
+    # cleanup lambda uploader's temp directory
+    if os.path.exists('.lambda_uploader_temp'):
+        shutil.rmtree('.lambda_uploader_temp')
+
     return package
 
 
@@ -169,12 +200,14 @@ def _print_status(config):
 
 
 @main.command()
-def build():
+@climax.argument('--rebuild-deps', action='store_true',
+                 help='Reinstall all dependencies.')
+def build(rebuild_deps):
     """Build lambda package."""
     config = _load_config()
 
     print("Building lambda package...")
-    package = _build(config)
+    package = _build(config, rebuild_deps=rebuild_deps)
     print("{} has been built successfully.".format(package))
 
 

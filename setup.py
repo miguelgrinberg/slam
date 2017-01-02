@@ -23,7 +23,8 @@ setup(
         'boto',
         'climax',
         'jinja2',
-        'pyyaml'
+        'pyyaml',
+        'virtualenv'
     ],
     tests_require=[],
     test_suite='test_slam',
