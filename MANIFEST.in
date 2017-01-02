@@ -1,1 +1,1 @@
-include slam/cfn.yaml
+include slam/cfn.yaml slam/slam.yaml
