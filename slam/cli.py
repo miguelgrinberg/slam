@@ -177,7 +177,7 @@ def _print_status(config):
     try:
         stack = cfn.describe_stacks(StackName=config['name'])['Stacks'][0]
     except botocore.exceptions.ClientError:
-        print('The API has not been deployed yet.')
+        print('{} has not been deployed yet.'.format(config['name']))
     else:
         # determine if $LATEST has been published as a stage version, as in
         # that case we want to show the version number
@@ -192,7 +192,7 @@ def _print_status(config):
             stage_hash[s] = h
             if v != '$LATEST':
                 hash_version[h] = v
-        print('Your API is deployed!')
+        print('{} is deployed!'.format(config['name']))
         for s in config['stage_environments'].keys():
             print('  {}/{}: {}'.format(
                 s, hash_version.get(stage_hash[s], '$LATEST'),
@@ -370,10 +370,10 @@ def delete():
         s3.delete_object(Bucket=bucket, Key=old_pkg)
         s3.delete_bucket(Bucket=bucket)
     except botocore.exceptions.ClientError:
-        print('The project has been deleted, but the S3 bucket "{}" failed to '
-              'delete.'.format(bucket))
+        print('{} has been deleted, but the S3 bucket {} failed to '
+              'delete.'.format(config['name'], bucket))
     else:
-        print('The project has been deleted.')
+        print('{} has been deleted.'.format(config['name']))
 
 
 @main.command()
