@@ -2,8 +2,6 @@ from __future__ import absolute_import
 
 from datetime import datetime
 import os
-import string
-import random
 import re
 import subprocess
 import shutil
@@ -190,7 +188,6 @@ def _print_status(config):
     else:
         # determine if $LATEST has been published as a stage version, as in
         # that case we want to show the version number
-        f = {}
         stage_hash = {}
         hash_version = {}
         for s in config['stage_environments'].keys():
