@@ -13,7 +13,7 @@ Parameters:
   LambdaTimeout:
     Type: "Number"
     Description: "The timeout in seconds for the lambda function."
-    Default: 5
+    Default: 10
 
   LambdaMemorySize:
     Type: "Number"

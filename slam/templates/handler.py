@@ -68,7 +68,8 @@ def lambda_handler(event, context):
         return write
 
     # invoke the WSGI app
-    app_iter = lambda_handler.app(environ, start_response)
+    from {{module}} import {{app}} as app
+    app_iter = app(environ, start_response)
     try:
         for item in app_iter:
             body.append(item)
