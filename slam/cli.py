@@ -62,7 +62,8 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
         if dynamodb_tables is not None else []
 
     # generate slam.yaml
-    template_file = os.path.join(os.path.dirname(__file__), 'slam.yaml')
+    template_file = os.path.join(os.path.dirname(__file__),
+                                 'templates/slam.yaml')
     with open(template_file) as f:
         template = f.read()
     template = jinja2.Environment(
@@ -139,7 +140,8 @@ lambda_handler.app = {app}
 """
 
     # generate handler.py
-    with open(os.path.join(os.path.dirname(__file__), 'handler.py')) as f:
+    with open(os.path.join(os.path.dirname(__file__),
+                           'templates/handler.py')) as f:
         code = f.read()
     with open('.slam/handler.py', 'wt') as f:
         f.write(handler.format(module=config['server_module'],
@@ -161,7 +163,8 @@ def _get_cfn_template(config, raw=False, custom_template=None):
     elif config.get('cfn_template'):
         template_file = config['cfn_template']
     else:
-        template_file = os.path.join(os.path.dirname(__file__), 'cfn.yaml')
+        template_file = os.path.join(os.path.dirname(__file__),
+                                     'templates/cfn.yaml')
     with open(template_file) as f:
         template = f.read()
     if raw:
