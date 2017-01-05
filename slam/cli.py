@@ -109,6 +109,7 @@ def _build(config, rebuild_deps=False):
     # create .slam directory if it doesn't exist yet
     if not os.path.exists('.slam'):
         os.mkdir('.slam')
+    _generate_lambda_handler(config)
 
     # create or update virtualenv
     if rebuild_deps:

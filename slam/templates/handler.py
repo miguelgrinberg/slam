@@ -54,6 +54,9 @@ def lambda_handler(event, context):
     for k, v in (event.get('stageVariables') or {}).items():
         os.environ[k] = v
 
+    # add predefined variables to the environment
+    os.environ['LAMBDA_VERSION'] = context.function_version
+
     status_headers = [None, None]
     body = []
 
