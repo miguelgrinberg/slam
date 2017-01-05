@@ -16,8 +16,10 @@ import yaml
 
 
 @climax.group()
-def main():
-    pass
+@climax.argument('--config-file', '-c', default='slam.yaml',
+                 help='The slam configuration file. Defaults to slam.yaml.')
+def main(config_file):
+    return {'config_file': config_file}
 
 
 @main.command()
@@ -41,11 +43,11 @@ def main():
 @climax.argument('wsgi_app',
                  help='The WSGI app instance, in the format module:app.')
 def init(name, description, bucket, timeout, memory, stages, requirements,
-         dynamodb_tables, wsgi_app):
+         dynamodb_tables, wsgi_app, config_file):
     """Generate a configuration file."""
-    if os.path.exists('slam.yaml'):
-        print('Please delete the old version slam.yaml if you want to '
-              'reconfigure your project.')
+    if os.path.exists(config_file):
+        print('Please delete the old version {} if you want to '
+              'reconfigure your project.'.format(config_file))
         sys.exit(1)
 
     module, app = wsgi_app.split(':')
@@ -72,19 +74,20 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
             bucket=bucket, timeout=timeout, memory=memory,
             requirements=requirements, stages=stages, devstage=stages[0],
             tables=tables)
-    with open('slam.yaml', 'wt') as f:
+    with open(config_file, 'wt') as f:
         f.write(template)
     print('The configuration file for your project been generated. Remember '
-          'to add slam.yaml to source control.')
+          'to add {} to source control.'.format(config_file))
 
 
-def _load_config():
+def _load_config(config_file='slam.yaml'):
     try:
-        with open('slam.yaml') as f:
+        with open(config_file) as f:
             return yaml.load(f)
     except IOError:
         # there is no config file in the current directory
-        raise RuntimeError('Config file not found. Did you run "slam init"?')
+        raise RuntimeError('Config file {} not found. Did you run '
+                           '"slam init"?'.format(config_file))
 
 
 def _run_command(cmd):
@@ -212,9 +215,9 @@ def _print_status(config):
 @main.command()
 @climax.argument('--rebuild-deps', action='store_true',
                  help='Reinstall all dependencies.')
-def build(rebuild_deps):
+def build(rebuild_deps, config_file):
     """Build lambda package."""
-    config = _load_config()
+    config = _load_config(config_file)
 
     print("Building lambda package...")
     package = _build(config, rebuild_deps=rebuild_deps)
@@ -234,9 +237,10 @@ def build(rebuild_deps):
                  help='Do no deploy a new lambda.')
 @climax.argument('--rebuild-deps', action='store_true',
                  help='Reinstall all dependencies.')
-def deploy(stage, version, template, lambda_package, no_lambda, rebuild_deps):
+def deploy(stage, version, template, lambda_package, no_lambda, rebuild_deps,
+           config_file):
     """Deploy project to AWS."""
-    config = _load_config()
+    config = _load_config(config_file)
 
     s3 = boto3.client('s3')
     cfn = boto3.client('cloudformation')
@@ -362,9 +366,9 @@ def deploy(stage, version, template, lambda_package, no_lambda, rebuild_deps):
 
 
 @main.command()
-def delete():
+def delete(config_file):
     """Delete the project."""
-    config = _load_config()
+    config = _load_config(config_file)
 
     s3 = boto3.client('s3')
     cfn = boto3.client('cloudformation')
@@ -389,9 +393,9 @@ def delete():
 
 
 @main.command()
-def status():
+def status(config_file):
     """Show deployment status for the project."""
-    config = _load_config()
+    config = _load_config(config_file)
     _print_status(config)
 
 
@@ -399,7 +403,7 @@ def status():
 @climax.argument('--raw', action='store_true',
                  help='Return template before it is processed with the '
                  'configuration')
-def template(raw):
+def template(raw, config_file):
     """Print the default Cloudformation deployment template."""
-    config = _load_config()
+    config = _load_config(config_file)
     print(_get_cfn_template(config, raw=raw))
