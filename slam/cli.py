@@ -192,7 +192,7 @@ def _print_status(config):
                  stack, 'Output', 'FunctionArn'), Qualifier=s)
             v = fd['Configuration']['Version']
             if v != '$LATEST' and s != config['devstage']:
-                v = '/v{}'.format(v)
+                v = ':{}'.format(v)
             else:
                 v = ''
             print('  {}{}: {}'.format(
@@ -213,10 +213,6 @@ def build(rebuild_deps, config_file):
 
 
 @main.command()
-@climax.argument('--stage',
-                 help='Stage to deploy. Defaults to the development stage.')
-@climax.argument('--version',
-                 help='Stage name or numeric version to set the stage to.')
 @climax.argument('--template', help='Custom cloudformation template to '
                  'deploy.')
 @climax.argument('--lambda-package',
@@ -225,9 +221,9 @@ def build(rebuild_deps, config_file):
                  help='Do no deploy a new lambda.')
 @climax.argument('--rebuild-deps', action='store_true',
                  help='Reinstall all dependencies.')
-def deploy(stage, version, template, lambda_package, no_lambda, rebuild_deps,
+def deploy(template, lambda_package, no_lambda, rebuild_deps,
            config_file):
-    """Deploy project to AWS."""
+    """Deploy the project to the development stage."""
     config = _load_config(config_file)
 
     s3 = boto3.client('s3')
@@ -242,24 +238,9 @@ def deploy(stage, version, template, lambda_package, no_lambda, rebuild_deps,
     except botocore.exceptions.ClientError:
         pass
 
-    # validate input arguments and apply defaults
-    if stage is None:
-        stage = config['devstage']
-    if stage != config['devstage']:
-        if version is None:
-            version = config['devstage']
-        if version not in config['stage_environments'] and \
-                not version.isdigit():
-            raise ValueError('Version must be a stage name or number')
-    else:
-        if version is not None:
-            raise ValueError('Version cannot be used when deploying to the '
-                             'development stage.')
-
     # build lambda package if required
     built_package = False
-    if stage == config['devstage'] and lambda_package is None and \
-            not no_lambda:
+    if lambda_package is None and not no_lambda:
         print("Building lambda package...")
         lambda_package = _build(config, rebuild_deps=rebuild_deps)
         built_package = True
@@ -301,23 +282,9 @@ def deploy(stage, version, template, lambda_package, no_lambda, rebuild_deps,
             # the dev stage always gets the latest version
             continue
         param = s.title() + 'Version'
-        if s != stage:
-            v = _get_from_stack(previous_deployment, 'Parameter', param) \
-                if previous_deployment else '$LATEST'
-            v = v or '$LATEST'
-        else:
-            if version.isdigit():
-                # explicit version number
-                v = str(version)
-            elif version == config['devstage']:
-                # publish a new version from $LATEST, and assign it to stage
-                lmb = boto3.client('lambda')
-                v = lmb.publish_version(FunctionName=_get_from_stack(
-                    previous_deployment, 'Output', 'FunctionArn'))['Version']
-            else:
-                # publish version from a stage other than the devstage
-                v = _get_from_stack(previous_deployment, 'Parameter',
-                                    version.title() + 'Version')
+        v = _get_from_stack(previous_deployment, 'Parameter', param) \
+            if previous_deployment else '$LATEST'
+        v = v or '$LATEST'
         parameters.append({'ParameterKey': param, 'ParameterValue': v})
 
     # run the cloudformation template
@@ -339,7 +306,8 @@ def deploy(stage, version, template, lambda_package, no_lambda, rebuild_deps,
         waiter.wait(StackName=config['name'])
     except botocore.exceptions.ClientError:
         # the update failed, so we remove the lambda package from S3
-        s3.delete_object(Bucket=bucket, Key=lambda_package)
+        if built_package:
+            s3.delete_object(Bucket=bucket, Key=lambda_package)
         raise
     else:
         if previous_deployment:
@@ -348,6 +316,92 @@ def deploy(stage, version, template, lambda_package, no_lambda, rebuild_deps,
             old_pkg = _get_from_stack(previous_deployment, 'Parameter',
                                       'LambdaS3Key')
             s3.delete_object(Bucket=bucket, Key=old_pkg)
+
+    # we are done, show status info and exit
+    _print_status(config)
+
+
+@main.command()
+@climax.argument('--version',
+                 help=('Stage name or numeric version to publish. '
+                       'Defaults to the development stage.'))
+@climax.argument('--template', help='Custom cloudformation template to '
+                 'deploy.')
+@climax.argument('stage', help='Stage to publish to.')
+def publish(version, template, stage, config_file):
+    """Publish a version of the project to a stage."""
+    config = _load_config(config_file)
+    cfn = boto3.client('cloudformation')
+
+    if stage == config['devstage']:
+            raise ValueError('Cannot publish to the development stage, use '
+                             'the deploy command instead.')
+    if version is None:
+        version = config['devstage']
+
+    # obtain previous deployment
+    previous_deployment = None
+    try:
+        previous_deployment = cfn.describe_stacks(
+            StackName=config['name'])['Stacks'][0]
+    except botocore.exceptions.ClientError:
+        raise RuntimeError('This project has not been deployed yet.')
+
+    # preserve package from previous deployment
+    bucket = _get_from_stack(previous_deployment, 'Parameter',
+                             'LambdaS3Bucket')
+    lambda_package = _get_from_stack(previous_deployment, 'Parameter',
+                                     'LambdaS3Key')
+
+    # prepare cloudformation template
+    template_body = _get_cfn_template(config, custom_template=template)
+    parameters = [
+        {'ParameterKey': 'LambdaS3Bucket', 'ParameterValue': bucket},
+        {'ParameterKey': 'LambdaS3Key', 'ParameterValue': lambda_package},
+        {'ParameterKey': 'LambdaTimeout',
+         'ParameterValue': str(config['timeout'])},
+        {'ParameterKey': 'LambdaMemorySize',
+         'ParameterValue': str(config['memory'])},
+        {'ParameterKey': 'APIName', 'ParameterValue': config['name']},
+        {'ParameterKey': 'APIDescription',
+         'ParameterValue': config['description']},
+    ]
+    for s in config['stage_environments'].keys():
+        if s == config['devstage']:
+            # the dev stage does not change during a publish operation
+            continue
+        param = s.title() + 'Version'
+        if s != stage:
+            v = _get_from_stack(previous_deployment, 'Parameter', param) \
+                if previous_deployment else '$LATEST'
+            v = v or '$LATEST'
+        else:
+            if version.isdigit():
+                # explicit version number
+                v = str(version)
+            elif version == config['devstage']:
+                # publish a new version from $LATEST, and assign it to stage
+                lmb = boto3.client('lambda')
+                v = lmb.publish_version(FunctionName=_get_from_stack(
+                    previous_deployment, 'Output', 'FunctionArn'))['Version']
+            else:
+                # publish version from a stage other than the devstage
+                v = _get_from_stack(previous_deployment, 'Parameter',
+                                    version.title() + 'Version')
+        parameters.append({'ParameterKey': param, 'ParameterValue': v})
+
+    # run the cloudformation template
+    print('Publishing {}:{} to {}...'.format(config['name'], version, stage))
+    cfn.update_stack(StackName=config['name'], TemplateBody=template_body,
+                     Parameters=parameters,
+                     Capabilities=['CAPABILITY_IAM'])
+    waiter = cfn.get_waiter('stack_update_complete')
+
+    # wait for cloudformation to do its thing
+    try:
+        waiter.wait(StackName=config['name'])
+    except botocore.exceptions.ClientError:
+        raise
 
     # we are done, show status info and exit
     _print_status(config)
