@@ -185,7 +185,6 @@ def _print_status(config):
         stack = cfn.describe_stacks(StackName=config['name'])['Stacks'][0]
     except botocore.exceptions.ClientError:
         print('{} has not been deployed yet.'.format(config['name']))
-        raise
     else:
         print('{} is deployed!'.format(config['name']))
         for s in config['stage_environments'].keys():
@@ -197,7 +196,9 @@ def _print_status(config):
             else:
                 v = ''
             print('  {}{}: {}'.format(
-                s, v, _get_from_stack(stack, 'Output', s.title() + 'Endpoint')))
+                s, v, _get_from_stack(stack, 'Output',
+                                      s.title() + 'Endpoint')))
+
 
 @main.command()
 @climax.argument('--rebuild-deps', action='store_true',

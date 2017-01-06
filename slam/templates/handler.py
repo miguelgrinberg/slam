@@ -68,7 +68,7 @@ def lambda_handler(event, context):
         return write
 
     # invoke the WSGI app
-    from {{module}} import {{app}} as app
+    from {{module}} import {{app}} as app  # noqa
     app_iter = app(environ, start_response)
     try:
         for item in app_iter:
