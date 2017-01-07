@@ -5,7 +5,6 @@ import os
 import re
 import subprocess
 import shutil
-import sys
 
 import boto3
 import botocore
@@ -46,9 +45,8 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
          dynamodb_tables, wsgi_app, config_file):
     """Generate a configuration file."""
     if os.path.exists(config_file):
-        print('Please delete the old version {} if you want to '
-              'reconfigure your project.'.format(config_file))
-        sys.exit(1)
+        raise RuntimeError('Please delete the old version {} if you want to '
+                           'reconfigure your project.'.format(config_file))
 
     module, app = wsgi_app.split(':')
     if not name:

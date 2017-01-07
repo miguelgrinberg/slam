@@ -26,8 +26,12 @@ setup(
         'pyyaml',
         'virtualenv'
     ],
-    tests_require=[],
-    test_suite='test_slam',
+    tests_require=[
+        'mock',
+        'coverage',
+        'flake8'
+    ],
+    test_suite='tests',
     classifiers=[
         'Environment :: Web Environment',
         'Intended Audience :: Developers',
