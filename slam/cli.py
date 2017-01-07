@@ -252,8 +252,11 @@ def deploy(template, lambda_package, no_lambda, rebuild_deps,
     try:
         s3.head_bucket(Bucket=bucket)
     except botocore.exceptions.ClientError:
-        s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={
-            'LocationConstraint': region})
+        if region != 'us-east-1':
+            s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={
+                'LocationConstraint': region})
+        else:
+            s3.create_bucket(Bucket=bucket)
 
     # upload lambda package to S3
     if built_package:
