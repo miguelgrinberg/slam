@@ -76,8 +76,8 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
             tables=tables)
     with open(config_file, 'wt') as f:
         f.write(template)
-    print('The configuration file for your project been generated. Remember '
-          'to add {} to source control.'.format(config_file))
+    print('The configuration file for your project has been generated. '
+          'Remember to add {} to source control.'.format(config_file))
 
 
 def _load_config(config_file='slam.yaml'):
@@ -191,7 +191,7 @@ def _print_status(config):
             fd = lmb.get_function(FunctionName=_get_from_stack(
                  stack, 'Output', 'FunctionArn'), Qualifier=s)
             v = fd['Configuration']['Version']
-            if v != '$LATEST' and s != config['devstage']:
+            if v != '$LATEST' or s == config['devstage']:
                 v = ':{}'.format(v)
             else:
                 v = ''
@@ -289,13 +289,13 @@ def deploy(template, lambda_package, no_lambda, rebuild_deps,
 
     # run the cloudformation template
     if previous_deployment is None:
-        print('Deploying {}...'.format(config['name']))
+        print('Deploying {}:{}...'.format(config['name'], config['devstage']))
         cfn.create_stack(StackName=config['name'], TemplateBody=template_body,
                          Parameters=parameters,
                          Capabilities=['CAPABILITY_IAM'])
         waiter = cfn.get_waiter('stack_create_complete')
     else:
-        print('Updating {}...'.format(config['name']))
+        print('Updating {}:{}...'.format(config['name'], config['devstage']))
         cfn.update_stack(StackName=config['name'], TemplateBody=template_body,
                          Parameters=parameters,
                          Capabilities=['CAPABILITY_IAM'])
@@ -336,11 +336,13 @@ def publish(version, template, stage, config_file):
     if stage == config['devstage']:
             raise ValueError('Cannot publish to the development stage, use '
                              'the deploy command instead.')
-    if version is None:
+    if version is None or version == '$LATEST':
         version = config['devstage']
+    elif not version.isdigit():
+        raise ValueError('Invalid version. Use a stage name or a numeric '
+                         'version number.')
 
     # obtain previous deployment
-    previous_deployment = None
     try:
         previous_deployment = cfn.describe_stacks(
             StackName=config['name'])['Stacks'][0]
@@ -415,9 +417,12 @@ def delete(config_file):
     s3 = boto3.client('s3')
     cfn = boto3.client('cloudformation')
 
-    stack = cfn.describe_stacks(StackName=config['name'])['Stacks'][0]
+    try:
+        stack = cfn.describe_stacks(StackName=config['name'])['Stacks'][0]
+    except botocore.exceptions.ClientError:
+        raise RuntimeError('This project has not been deployed yet.')
     bucket = _get_from_stack(stack, 'Parameter', 'LambdaS3Bucket')
-    old_pkg = _get_from_stack(stack, 'Parameter', 'LambdaS3Key')
+    lambda_package = _get_from_stack(stack, 'Parameter', 'LambdaS3Key')
 
     print('Deleting API...')
     cfn.delete_stack(StackName=config['name'])
@@ -425,11 +430,11 @@ def delete(config_file):
     waiter.wait(StackName=config['name'])
 
     try:
-        s3.delete_object(Bucket=bucket, Key=old_pkg)
+        s3.delete_object(Bucket=bucket, Key=lambda_package)
         s3.delete_bucket(Bucket=bucket)
     except botocore.exceptions.ClientError:
-        print('{} has been deleted, but the S3 bucket {} failed to '
-              'delete.'.format(config['name'], bucket))
+        print('{} has been deleted, but the S3 bucket {} could not be '
+              'deleted.'.format(config['name'], bucket))
     else:
         print('{} has been deleted.'.format(config['name']))
 
