@@ -61,9 +61,18 @@ Resources:
             Statement:
               - Effect: "Allow"
                 Action:
-                  - "dynamodb:*"
+                  - "dynamodb:DeleteItem"
+                  - "dynamodb:GetItem"
+                  - "dynamodb:PutItem"
+                  - "dynamodb:Query"
+                  - "dynamodb:Scan"
+                  - "dynamodb:UpdateItem"
                 Resource:
-                  - "*"
+                  {% for stage in stages %}
+                  {% for name, table in dynamodb_tables.items() %}
+                  - !Join ["", ["arn:aws:dynamodb:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":table/", !Ref "{{stage|title}}{{name|title}}DynamoDBTable"]]
+                  {% endfor %}
+                  {% endfor %}
       {% endif %}
 
   Function:
@@ -119,6 +128,7 @@ Resources:
                 httpMethod: "POST"
                 type: "aws_proxy"
 
+  {% set last_table = [] %}
   {% for stage in stages %}
   {{stage|title}}FunctionAlias:
     Type: "AWS::Lambda::Alias"
@@ -154,8 +164,12 @@ Resources:
       SourceArn: !Join ["", ["arn:aws:execute-api:", !Ref "AWS::Region", ":", !Ref "AWS::AccountId", ":", !Ref "API", "/*/*/*"]]
 
   {% for name, table in dynamodb_tables.items() %}
-  {{stage|title}}DynamoDBTable{{loop.index}}:
+  {{stage|title}}{{name|title}}DynamoDBTable:
     Type: "AWS::DynamoDB::Table"
+    {% if last_table %}
+    DependsOn: "{{last_table[-1]}}"
+    {% endif %}
+    {% set _ = last_table.append(stage.title() + name.title() + "DynamoDBTable") %}
     Properties:
       TableName: "{{stage}}.{{name}}"
       AttributeDefinitions:
