@@ -5,22 +5,14 @@
 name: "{{name}}"
 description: "{{description}}"
 
-# the WSGI server
-server_module: "{{module}}"
-server_app: "{{app}}"
+# the deployment type
+# currently, only "wsgi" is supported
+type: wsgi
 
-# custom cloudformation template
-# (leave unset unless you know what you are doing)
-cfn_template:
-
-# S3 bucket where lambda packages are stored
-bucket: "{{bucket}}"
-
-# timeout in seconds for the lambda function
-timeout: {{timeout}}
-
-# memory in MB for the lambda function
-memory: {{memory}}
+# WSGI server details
+wsgi:
+  module: "{{module}}"
+  app: "{{app}}"
 
 # location of the requirements file for the project
 requirements: "{{requirements}}"
@@ -29,49 +21,66 @@ requirements: "{{requirements}}"
 devstage: "{{devstage}}"
 
 # environment variables common to all stages
+# add any variables in this section as "key: value" pairs
 environment:
-  IN_LAMBDA: "1"
-  # add any additional environment variables here
 
 # environment variables specific to each stage
+# add or remove stages by editing the entries in this section
+# add any stage specific variables under each stage section as "key: value" pairs
 stage_environments:
   {% for stage in stages %}
   {{stage}}:
-    STAGE: "{{stage}}"
-    # add any additional stage variables here
+
   {% endfor %}
 
-# dynamodb tables
-dynamodb_tables:
-  # example of a simple table:
-  # mytable:
-  #   attributes:
-  #     id: "S"
-  #   key: "id"
-  #   provisioned_throughput: [1, 1]
-  #
-  # a more complex example:
-  # mytable2:
-  #   attributes:
-  #     id: "S"
-  #     name: "S"
-  #     age: "N"
-  #   key: ["id", "name"]
-  #   provisioned_throughput: [1, 1]
-  #   local_secondary_indexes:
-  #     myindex:
-  #       key: ["id", "age"]
-  #       project:
-  #         - "name"
-  #   global_secondary_indexes:
-  #     myindex2:
-  #       key: ["age", "name"]
-  #       project: "all"
-  #       provisioned_throughput: [1, 1]
-  {% for table in tables %}
-  {{table}}:
-    attributes:
-      id: "S"
-    key: "id"
-    provisioned_throughput: [1, 1]
-  {% endfor %}
+# AWS specific options
+aws:
+  # S3 bucket where lambda packages are stored
+  s3_bucket: "{{bucket}}"
+
+  # timeout in seconds for the lambda function
+  lambda_timeout: {{timeout}}
+
+  # memory in MB for the lambda function
+  lambda_memory: {{memory}}
+
+  # dynamodb tables
+  dynamodb_tables:
+    # example of a simple table:
+    # mytable:
+    #   attributes:
+    #     id: "S"
+    #   key: "id"
+    #   provisioned_throughput: [1, 1]
+    #
+    # a more complex example:
+    # mytable2:
+    #   attributes:
+    #     id: "S"
+    #     name: "S"
+    #     age: "N"
+    #   key: ["id", "name"]
+    #   provisioned_throughput: [1, 1]
+    #   local_secondary_indexes:
+    #     myindex:
+    #       key: ["id", "age"]
+    #       project:
+    #         - "name"
+    #   global_secondary_indexes:
+    #     myindex2:
+    #       key: ["age", "name"]
+    #       project: "all"
+    #       provisioned_throughput: [1, 1]
+    {% for table in tables %}
+    {{table}}:
+      attributes:
+        id: "S"
+      key: "id"
+      provisioned_throughput: [1, 1]
+    {% endfor %}
+
+  # custom cloudformation template
+  # leave empty to use the default cloudformation template
+  # you can use "slam template" or "slam template --raw" to export the default
+  # template and then add your customizations
+  cfn_template:

@@ -25,7 +25,8 @@ app.body = [b'']
 class HandlerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        config = {'server_module': 'tests.test_handler', 'server_app': 'app'}
+        config = {'type': 'wsgi',
+                  'wsgi': {'module': 'tests.test_handler', 'app': 'app'}}
         _generate_lambda_handler(config, 'slam/_handler.py')
 
     @classmethod

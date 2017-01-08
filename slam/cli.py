@@ -1,5 +1,3 @@
-from __future__ import absolute_import
-
 from datetime import datetime
 import os
 import re
@@ -99,12 +97,15 @@ def _run_command(cmd):
 
 
 def _generate_lambda_handler(config, output='.slam/handler.py'):
+    if config['type'] != 'wsgi':
+        raise ValueError('Unsupported project type "{}"'.format(
+            config['type']))
     with open(os.path.join(os.path.dirname(__file__),
                            'templates/handler.py')) as f:
         template = f.read()
     template = jinja2.Environment(
         lstrip_blocks=True, trim_blocks=True).from_string(template).render(
-            module=config['server_module'], app=config['server_app'])
+            module=config['wsgi']['module'], app=config['wsgi']['app'])
     with open(output, 'wt') as f:
         f.write(template + '\n')
 
@@ -155,8 +156,8 @@ def _get_from_stack(stack, source, key):
 def _get_cfn_template(config, raw=False, custom_template=None):
     if custom_template:
         template_file = custom_template
-    elif config.get('cfn_template'):
-        template_file = config['cfn_template']
+    elif config['aws'].get('cfn_template'):
+        template_file = config['aws']['cfn_template']
     else:
         template_file = os.path.join(os.path.dirname(__file__),
                                      'templates/cfn.yaml')
@@ -165,14 +166,14 @@ def _get_cfn_template(config, raw=False, custom_template=None):
     if raw:
         return template
     stages = config['stage_environments'].keys()
-    vars = config['stage_environments'].copy()
-    for s in config['stage_environments'].keys():
-        vars[s] = config['environment'].copy()
-        vars[s].update(config['stage_environments'][s])
+    vars = {}
+    for s in stages:
+        vars[s] = (config['environment'] or {}).copy()
+        vars[s].update(config['stage_environments'][s] or {})
     template = jinja2.Environment(
         lstrip_blocks=True, trim_blocks=True).from_string(template).render(
             stages=stages, devstage=config['devstage'], vars=vars,
-            dynamodb_tables=config.get('dynamodb_tables') or {})
+            dynamodb_tables=config['aws'].get('dynamodb_tables') or {})
     return template
 
 
@@ -248,7 +249,7 @@ def deploy(template, lambda_package, no_lambda, rebuild_deps,
                                          'LambdaS3Key')
 
     # create S3 bucket if it doesn't exist yet
-    bucket = config['bucket']
+    bucket = config['aws']['s3_bucket']
     try:
         s3.head_bucket(Bucket=bucket)
     except botocore.exceptions.ClientError:
@@ -271,9 +272,9 @@ def deploy(template, lambda_package, no_lambda, rebuild_deps,
         {'ParameterKey': 'LambdaS3Bucket', 'ParameterValue': bucket},
         {'ParameterKey': 'LambdaS3Key', 'ParameterValue': lambda_package},
         {'ParameterKey': 'LambdaTimeout',
-         'ParameterValue': str(config['timeout'])},
+         'ParameterValue': str(config['aws']['lambda_timeout'])},
         {'ParameterKey': 'LambdaMemorySize',
-         'ParameterValue': str(config['memory'])},
+         'ParameterValue': str(config['aws']['lambda_memory'])},
         {'ParameterKey': 'APIName', 'ParameterValue': config['name']},
         {'ParameterKey': 'APIDescription',
          'ParameterValue': config['description']},
@@ -362,9 +363,9 @@ def publish(version, template, stage, config_file):
         {'ParameterKey': 'LambdaS3Bucket', 'ParameterValue': bucket},
         {'ParameterKey': 'LambdaS3Key', 'ParameterValue': lambda_package},
         {'ParameterKey': 'LambdaTimeout',
-         'ParameterValue': str(config['timeout'])},
+         'ParameterValue': str(config['aws']['lambda_timeout'])},
         {'ParameterKey': 'LambdaMemorySize',
-         'ParameterValue': str(config['memory'])},
+         'ParameterValue': str(config['aws']['lambda_memory'])},
         {'ParameterKey': 'APIName', 'ParameterValue': config['name']},
         {'ParameterKey': 'APIDescription',
          'ParameterValue': config['description']},
