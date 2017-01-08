@@ -3,7 +3,7 @@ import os
 import sys
 try:
     from urllib import quote
-except ImportError:
+except ImportError:  # pragma: no cover
     from urllib.parse import quote
 
 

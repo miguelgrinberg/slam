@@ -87,3 +87,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# temp file generated during unit tests
+slam/_handler.py

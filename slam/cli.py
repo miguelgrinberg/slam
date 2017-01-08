@@ -98,15 +98,15 @@ def _run_command(cmd):
             proc.returncode)))
 
 
-def _generate_lambda_handler(config):
+def _generate_lambda_handler(config, output='.slam/handler.py'):
     with open(os.path.join(os.path.dirname(__file__),
                            'templates/handler.py')) as f:
         template = f.read()
     template = jinja2.Environment(
         lstrip_blocks=True, trim_blocks=True).from_string(template).render(
             module=config['server_module'], app=config['server_app'])
-    with open('.slam/handler.py', 'wt') as f:
-        f.write(template)
+    with open(output, 'wt') as f:
+        f.write(template + '\n')
 
 
 def _build(config, rebuild_deps=False):
