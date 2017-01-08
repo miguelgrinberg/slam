@@ -31,13 +31,11 @@ Parameters:
     Default: ""
 
   {% for stage in stages %}
-  {% if stage != devstage %}
   {{stage|title}}Version:
     Type: "String"
     Description: "The lambda version number associated with the {{stage}} stage."
     Default: "$LATEST"
 
-  {% endif %}
   {% endfor %}
 Resources:
   FunctionExecutionRole:
@@ -135,11 +133,7 @@ Resources:
     Properties:
       Name: {{stage}}
       FunctionName: !Ref Function
-      {% if stage != devstage %}
       FunctionVersion: !Ref {{stage|title}}Version
-      {% else %}
-      FunctionVersion: "$LATEST"
-      {% endif %}
 
   {{stage|title}}APIDeployment:
     Type: "AWS::ApiGateway::Deployment"

@@ -212,6 +212,9 @@ def build(rebuild_deps, config_file):
 
 
 @main.command()
+@climax.argument('--stage',
+                 help=('Stage to deploy to. Defaults to the stage designated '
+                       'as the development stage'))
 @climax.argument('--template', help='Custom cloudformation template to '
                  'deploy.')
 @climax.argument('--lambda-package',
@@ -220,10 +223,12 @@ def build(rebuild_deps, config_file):
                  help='Do no deploy a new lambda.')
 @climax.argument('--rebuild-deps', action='store_true',
                  help='Reinstall all dependencies.')
-def deploy(template, lambda_package, no_lambda, rebuild_deps,
+def deploy(stage, template, lambda_package, no_lambda, rebuild_deps,
            config_file):
     """Deploy the project to the development stage."""
     config = _load_config(config_file)
+    if stage is None:
+        stage = config['devstage']
 
     s3 = boto3.client('s3')
     cfn = boto3.client('cloudformation')
@@ -280,24 +285,23 @@ def deploy(template, lambda_package, no_lambda, rebuild_deps,
          'ParameterValue': config['description']},
     ]
     for s in config['stage_environments'].keys():
-        if s == config['devstage']:
-            # the dev stage always gets the latest version
-            continue
         param = s.title() + 'Version'
-        v = _get_from_stack(previous_deployment, 'Parameter', param) \
-            if previous_deployment else '$LATEST'
+        v = None
+        if s != stage:
+            v = _get_from_stack(previous_deployment, 'Parameter', param) \
+                if previous_deployment else '$LATEST'
         v = v or '$LATEST'
         parameters.append({'ParameterKey': param, 'ParameterValue': v})
 
     # run the cloudformation template
     if previous_deployment is None:
-        print('Deploying {}:{}...'.format(config['name'], config['devstage']))
+        print('Deploying {} to {}...'.format(config['name'], stage))
         cfn.create_stack(StackName=config['name'], TemplateBody=template_body,
                          Parameters=parameters,
                          Capabilities=['CAPABILITY_IAM'])
         waiter = cfn.get_waiter('stack_create_complete')
     else:
-        print('Updating {}:{}...'.format(config['name'], config['devstage']))
+        print('Updating {}:{}...'.format(config['name'], stage))
         cfn.update_stack(StackName=config['name'], TemplateBody=template_body,
                          Parameters=parameters,
                          Capabilities=['CAPABILITY_IAM'])
@@ -335,14 +339,14 @@ def publish(version, template, stage, config_file):
     config = _load_config(config_file)
     cfn = boto3.client('cloudformation')
 
-    if stage == config['devstage']:
-            raise ValueError('Cannot publish to the development stage, use '
-                             'the deploy command instead.')
     if version is None or version == '$LATEST':
         version = config['devstage']
-    elif not version.isdigit():
+    elif version not in config['stage_environments'].keys() and \
+            not version.isdigit():
         raise ValueError('Invalid version. Use a stage name or a numeric '
                          'version number.')
+    if version == stage:
+        raise ValueError('Cannot deploy a stage into itself.')
 
     # obtain previous deployment
     try:
@@ -371,9 +375,6 @@ def publish(version, template, stage, config_file):
          'ParameterValue': config['description']},
     ]
     for s in config['stage_environments'].keys():
-        if s == config['devstage']:
-            # the dev stage does not change during a publish operation
-            continue
         param = s.title() + 'Version'
         if s != stage:
             v = _get_from_stack(previous_deployment, 'Parameter', param) \
