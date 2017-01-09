@@ -1,3 +1,4 @@
+import mock
 import os
 import unittest
 
@@ -88,3 +89,22 @@ class InitTests(unittest.TestCase):
         self.assertRaises(
             RuntimeError, cli.main,
             ['--config-file', 'slam1.yaml', 'init', 'app_module:app'])
+
+    def test_load_config(self):
+        mock_open = mock.mock_open(
+            read_data='---\nfoo: bar\nbaz:\n  - a\n  - b\n')
+        with mock.patch('slam.cli.open', mock_open, create=True):
+            config = cli._load_config()
+        mock_open.assert_called_once_with('slam.yaml')
+        self.assertEqual(config, {'foo': 'bar', 'baz': ['a', 'b']})
+
+    def test_load_custom_config(self):
+        mock_open = mock.mock_open(
+            read_data='---\nfoo: bar\nbaz:\n  - a\n  - b\n')
+        with mock.patch('slam.cli.open', mock_open, create=True):
+            config = cli._load_config('slam1.yaml')
+        mock_open.assert_called_once_with('slam1.yaml')
+        self.assertEqual(config, {'foo': 'bar', 'baz': ['a', 'b']})
+
+    def test_load_invalid_config(self):
+        self.assertRaises(RuntimeError, cli._load_config, 'bad_file.yaml')

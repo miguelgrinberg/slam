@@ -87,19 +87,23 @@ def _load_config(config_file='slam.yaml'):
 
 
 def _run_command(cmd):
-    proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT)
-    out, err = proc.communicate()
+    try:
+        proc = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT)
+        out, err = proc.communicate()
+    except OSError:
+        raise RuntimeError('Invalid command {}'.format(cmd))
     if proc.returncode != 0:
         print(out)
         raise(RuntimeError('Command failed with exit code {}.'.format(
             proc.returncode)))
+    return out
 
 
 def _generate_lambda_handler(config, output='.slam/handler.py'):
-    if config['type'] != 'wsgi':
-        raise ValueError('Unsupported project type "{}"'.format(
-            config['type']))
+    if 'type' not in config or config['type'] != 'wsgi':
+        raise ValueError('Unsupported project type {}'.format(
+            config.get('type', '')))
     with open(os.path.join(os.path.dirname(__file__),
                            'templates/handler.py')) as f:
         template = f.read()
