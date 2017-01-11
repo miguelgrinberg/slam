@@ -396,7 +396,9 @@ def publish(version, template, stage, config_file):
         {'ParameterKey': 'APIDescription',
          'ParameterValue': config['description']},
     ]
-    for s in config['stage_environments'].keys():
+    stages = list(config['stage_environments'].keys())
+    stages.sort()
+    for s in stages:
         param = s.title() + 'Version'
         if s != stage:
             v = _get_from_stack(previous_deployment, 'Parameter', param) \
