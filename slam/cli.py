@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from datetime import datetime
 import os
 import re
@@ -148,8 +150,25 @@ def _build(config, rebuild_deps=False):
     return package
 
 
+def _get_aws_region():  # pragma: no cover
+    return boto3.session.Session().region_name
+
+
+def _ensure_bucket_exists(s3, bucket, region):  # pragma: no cover
+    try:
+        s3.head_bucket(Bucket=bucket)
+    except botocore.exceptions.ClientError:
+        if region != 'us-east-1':
+            s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={
+                'LocationConstraint': region})
+        else:
+            s3.create_bucket(Bucket=bucket)
+
+
 def _get_from_stack(stack, source, key):
     value = None
+    if source + 's' not in stack:
+        raise ValueError('Invalid stack attribute' + str(stack))
     for p in stack[source + 's']:
         if p[source + 'Key'] == key:
             value = p[source + 'Value']
@@ -160,7 +179,7 @@ def _get_from_stack(stack, source, key):
 def _get_cfn_template(config, raw=False, custom_template=None):
     if custom_template:
         template_file = custom_template
-    elif config['aws'].get('cfn_template'):
+    elif 'aws' in config and config['aws'].get('cfn_template'):
         template_file = config['aws']['cfn_template']
     else:
         template_file = os.path.join(os.path.dirname(__file__),
@@ -177,7 +196,7 @@ def _get_cfn_template(config, raw=False, custom_template=None):
     template = jinja2.Environment(
         lstrip_blocks=True, trim_blocks=True).from_string(template).render(
             stages=stages, devstage=config['devstage'], vars=vars,
-            dynamodb_tables=config['aws'].get('dynamodb_tables') or {})
+            dynamodb_tables=config.get('aws', {}).get('dynamodb_tables') or {})
     return template
 
 
@@ -190,7 +209,9 @@ def _print_status(config):
         print('{} has not been deployed yet.'.format(config['name']))
     else:
         print('{} is deployed!'.format(config['name']))
-        for s in config['stage_environments'].keys():
+        stages = list(config['stage_environments'].keys())
+        stages.sort()
+        for s in stages:
             fd = lmb.get_function(FunctionName=_get_from_stack(
                  stack, 'Output', 'FunctionArn'), Qualifier=s)
             v = fd['Configuration']['Version']
@@ -236,7 +257,7 @@ def deploy(stage, template, lambda_package, no_lambda, rebuild_deps,
 
     s3 = boto3.client('s3')
     cfn = boto3.client('cloudformation')
-    region = boto3.session.Session().region_name
+    region = _get_aws_region()
 
     # obtain previous deployment if it exists
     previous_deployment = None
@@ -248,28 +269,23 @@ def deploy(stage, template, lambda_package, no_lambda, rebuild_deps,
 
     # build lambda package if required
     built_package = False
+    new_package = True
     if lambda_package is None and not no_lambda:
         print("Building lambda package...")
         lambda_package = _build(config, rebuild_deps=rebuild_deps)
         built_package = True
     elif lambda_package is None:
         # preserve package from previous deployment
+        new_package = False
         lambda_package = _get_from_stack(previous_deployment, 'Parameter',
                                          'LambdaS3Key')
 
     # create S3 bucket if it doesn't exist yet
     bucket = config['aws']['s3_bucket']
-    try:
-        s3.head_bucket(Bucket=bucket)
-    except botocore.exceptions.ClientError:
-        if region != 'us-east-1':
-            s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={
-                'LocationConstraint': region})
-        else:
-            s3.create_bucket(Bucket=bucket)
+    _ensure_bucket_exists(s3, bucket, region)
 
     # upload lambda package to S3
-    if built_package:
+    if new_package:
         s3.upload_file(lambda_package, bucket, lambda_package)
         if built_package:
             # we created the package, so now that is on S3 we can delete it
@@ -288,7 +304,9 @@ def deploy(stage, template, lambda_package, no_lambda, rebuild_deps,
         {'ParameterKey': 'APIDescription',
          'ParameterValue': config['description']},
     ]
-    for s in config['stage_environments'].keys():
+    stages = list(config['stage_environments'].keys())
+    stages.sort()
+    for s in stages:
         param = s.title() + 'Version'
         v = None
         if s != stage:
@@ -320,7 +338,7 @@ def deploy(stage, template, lambda_package, no_lambda, rebuild_deps,
             s3.delete_object(Bucket=bucket, Key=lambda_package)
         raise
     else:
-        if previous_deployment:
+        if previous_deployment and new_package:
             # the update succeeded, so it is safe to delete the lambda package
             # used by the previous deployment
             old_pkg = _get_from_stack(previous_deployment, 'Parameter',

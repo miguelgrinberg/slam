@@ -71,7 +71,8 @@ class BuildTests(unittest.TestCase):
         # in this test, a venv is active and located in the project's
         # directory. The ignore list for the lambda package should have it.
         saved_venv = os.environ.get('VIRTUAL_ENV')
-        os.environ['VIRTUAL_ENV'] = os.path.join(__file__, 'venv')
+        os.environ['VIRTUAL_ENV'] = os.path.join(os.path.dirname(__file__),
+                                                 'venv')
         pkg = cli._build(self.config)
         if saved_venv:
             os.environ['VIRTUAL_ENV'] = saved_venv
@@ -81,7 +82,7 @@ class BuildTests(unittest.TestCase):
             '.', 'requirements.txt', virtualenv='.slam/venv',
             extra_files=['.slam/handler.py'],
             ignore=['\.slam\/venv\/.*$', '\.pyc$',
-                    'tests\/test_build.py\/venv\/.*$'],
+                    'tests\/venv\/.*$'],
             zipfile_name=pkg)
 
     @mock.patch('slam.cli.os.path.exists', side_effect=[False, False, True])
@@ -152,6 +153,8 @@ class BuildTests(unittest.TestCase):
             rmtree.assert_any_call('.slam/venv')
         except AssertionError:
             pass
+        else:
+            raise AssertionError('directory should not have been deleted')
 
     @mock.patch('slam.cli.os.path.exists', side_effect=[False, True, True])
     @mock.patch('slam.cli.os.mkdir')
@@ -164,9 +167,11 @@ class BuildTests(unittest.TestCase):
         # the .slam/venv virtualenv already exists, should not be created
         cli._build(self.config)
         try:
-            _run_command.asssert_any_call('virtualenv .slam/venv')
+            _run_command.assert_any_call('virtualenv .slam/venv')
         except AssertionError:
             pass
+        else:
+            raise AssertionError('venv should not have been created')
 
     @mock.patch('slam.cli.os.path.exists', side_effect=[False, False, False])
     @mock.patch('slam.cli.os.mkdir')
@@ -184,6 +189,8 @@ class BuildTests(unittest.TestCase):
             rmtree.assert_any_call('.lambda_uploader_temp')
         except AssertionError:
             pass
+        else:
+            raise AssertionError('directory should not have been deleted')
 
     @mock.patch('slam.cli._load_config', return_value={'requirements': 'r'})
     @mock.patch('slam.cli._build')
