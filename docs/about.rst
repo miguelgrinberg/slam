@@ -7,7 +7,7 @@ In this page you can find some background information on Slam and AWS.
 What is Serverless Computing?
 =============================
 
-Modern clouds such as `AWS <https://aws.amazon.com>`_, offer different ways to
+Modern clouds, such as `AWS <https://aws.amazon.com>`_, offer different ways to
 host applications. At the least involved level, you can create server instances,
 which are fully enabled virtual machines that run the operating system of your
 choice and are connected to the Internet. Once you have an instance up, you can
@@ -21,13 +21,13 @@ and administration tasks to the cloud operator. This is what serverless
 computing is about.
 
 AWS provides a number of services that make the life of the application
-developer easier. For example, it offers options for managed databases, message
-queues, notifications, emails and so on. You as a developer have the option to
-install your own stack on instances or containers, but if you want to spend all
-your energy on your application, using the managed services offered by AWS makes
-a lot of sense. And in addition to being convenient, these services have very
-attractive pricing based on the "you only pay for what you use" model, so in
-many cases you even end up saving money.
+developer easier. For example, it offers several options for managed databases,
+message queues, notifications, emails and so on. You as a developer have the
+option to install your own stack on instances or containers, but if you want to
+spend all your energy on your application, using the managed services offered
+by AWS makes a lot of sense. And in addition to being convenient, these services
+have very attractive pricing based on the "you only pay for what you use" model,
+so in many cases you even end up saving money.
 
 What are Lambda and API Gateway?
 ================================
@@ -35,24 +35,23 @@ What are Lambda and API Gateway?
 In AWS, `Lambda <https://aws.amazon.com/lambda>`_ is the *function-as-a-service*
 or *FaaS* offering. With this service, you can upload your Python, Node.js, Java
 or C# code, and Lambda will deploy it and run it for you when you need to. To
-work with the Lambda service you upload your project packaged as a zip file that
-contains your application code plus all its dependencies. You have to designate
-a function in your code as the entry point, and this function will be called by
-AWS when the Lambda function is invoked.
+work with the Lambda service you upload your project along with any dependencies
+packaged as a zip file. You have to designate a function in your code as the
+entry point, and this function will be called by AWS when the Lambda function is
+invoked.
 
-Because Lambda functions are supposed to be short lived, and are not running
-constantly like a normal web server, there are some types of applications that
-are not a good match for this service. In particular, any applications that rely
-on the server maintaining a long connection with the client will not work well.
-Examples of these applications are those that return live information as a
-stream, or those that use long-polling or WebSocket to provide constant updates
-to the client.
-
-While having some code ready to be executed on demand on the cloud is nice,
-applications that expose their functionality as one or more HTTP based services
-cannot directly work on this platform, since they rely servers that need to be
-running constantly to receive client requests. In a traditional deployment of
-these applications you would maybe use gunicorn or uWSGI.
+This is a substantially different model to that of web services, which define
+one or more endpoints associated with logic, and expose them thorugh a web
+server. Because Lambda functions are supposed to be short lived, and are not
+running constantly like a normal web server, there are some types of
+applications that are not a good match for this service. In particular, any
+applications that rely on the server maintaining a long connection with the
+client will not work well. Examples of these applications are those that return
+live information as a stream, or those that use long-polling or WebSocket to
+provide constant updates to the client. But for the typical web service or
+micro-service, Lambda provides very efficient and cost effective way to host
+those logic pieces, though clearly this is not a platform in which a web server
+can execute.
 
 The Amazon `API Gateway <https://aws.amazon.com/api-gateway>`_ service bridges
 this gap, by allowing you to construct API endpoints, and configure what
@@ -73,20 +72,20 @@ Slam takes advantage of the wide support WSGI has in Python web applications, by
 converting HTTP requests and responses between the API Gateway and WSGI formats.
 When a request is received by API Gateway and passed on to the Lambda function,
 this request is converted to the WSGI format and used to invoke your
-application. The WSGI response from the application is converted back to the API
-Gateway format before the Lambda function ends. Slam makes the deployment
-completely automated by generating the code that performs these conversions, so
-that your application does not need to be changed at all.
+application, which is exactly what a web server such as gunicorn or uWSGI do.
+The WSGI response from the application is then converted back to the API Gateway
+format, before the Lambda function ends. Slam does all these conversions for
+you, so that your application does not need to be changed at all.
 
-One of the nicest features of Slam how it creates neat and tidy deployments that
-are a pleasure to manage. For this, it relies on
+One of the nicest features of Slam is how it creates neat and tidy deployments
+that are a pleasure to manage. For this, it relies on
 `Cloudformation <https://aws.amazon.com/cloudformation>`_, the AWS
-orchestration service. Slam uses the project configuration to create a
-Cloudformation template, and then it runs this template to make changes on your
+orchestration service. Slam uses the project configuration to generate a
+Cloudformation template, and then runs this template to make changes on your
 cloud account. The end result is that every single resource that is allocated
 for your deployment is owned by the Cloudformation template, making it easy to
 keep track of what resources are in use. And if you find the need to create a
-custom deployment that varies from the standard structure used by Slam, all you
+custom deployment that differs from the standard structure used by Slam, all you
 need to do is take Slam's Cloudformation template and modify it to suit your
 needs.
 
