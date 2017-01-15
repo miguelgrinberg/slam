@@ -176,11 +176,11 @@ To publish the version of the API deployed in the previous section to the
 Note that after the publish command completes, the ``prod`` stage is shown as
 ``prod:1``, indicating that this stage is running version 1.
 
-You can now continue working on the project, and run ``slam deploy`` to publish
-those changes to the ``dev`` stage, and that is not going to affect the version
-of the project running on ``prod``. If you want to upgrade the ``prod`` stage
-to a newer version of the project, just issue issue another ``slam publish``
-command, and a new numbered version will be generated.
+You can now continue working on the project, and run ``slam deploy`` to deploy
+the changes to the ``dev`` stage, and that is not going to affect the version of
+the project running on ``prod``. If you want to upgrade the ``prod`` stage to a
+newer version of the project, just issue issue another ``slam publish`` command,
+and a new numbered version will be generated.
 
 Project Status
 ==============
