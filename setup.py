@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='slam',
-    version='0.1.3',
+    version='0.2.0',
     url='https://github.com/miguelgrinberg/slam/',
     license='MIT',
     author='Miguel Grinberg',
