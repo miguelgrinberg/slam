@@ -10,8 +10,11 @@ import boto3
 import botocore
 import climax
 from lambda_uploader.package import build_package
-import jinja2
 import yaml
+
+from .helpers import render_template
+
+plugins = {}
 
 
 @climax.group()
@@ -19,6 +22,16 @@ import yaml
                  help='The slam configuration file. Defaults to slam.yaml.')
 def main(config_file):
     return {'config_file': config_file}
+
+
+def _load_config(config_file='slam.yaml'):
+    try:
+        with open(config_file) as f:
+            return yaml.load(f)
+    except IOError:
+        # there is no config file in the current directory
+        raise RuntimeError('Config file {} not found. Did you run '
+                           '"slam init"?'.format(config_file))
 
 
 @main.command()
@@ -42,7 +55,7 @@ def main(config_file):
 @climax.argument('wsgi_app',
                  help='The WSGI app instance, in the format module:app.')
 def init(name, description, bucket, timeout, memory, stages, requirements,
-         dynamodb_tables, wsgi_app, config_file):
+         dynamodb_tables, wsgi_app, config_file, **kwargs):
     """Generate a configuration file."""
     if os.path.exists(config_file):
         raise RuntimeError('Please delete the old version {} if you want to '
@@ -66,26 +79,30 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
                                  'templates/slam.yaml')
     with open(template_file) as f:
         template = f.read()
-    template = jinja2.Environment(
-        lstrip_blocks=True, trim_blocks=True).from_string(template).render(
-            name=name, description=description, module=module, app=app,
-            bucket=bucket, timeout=timeout, memory=memory,
-            requirements=requirements, stages=stages, devstage=stages[0],
-            tables=tables)
+    template = render_template(template, name=name, description=description,
+                               module=module, app=app, bucket=bucket,
+                               timeout=timeout, memory=memory,
+                               requirements=requirements, stages=stages,
+                               devstage=stages[0], tables=tables)
     with open(config_file, 'wt') as f:
         f.write(template)
+
+        # plugins
+        config = _load_config(config_file)
+        for name, plugin in plugins.items():
+            if hasattr(plugin, 'init'):
+                arguments = {k: v for k, v in kwargs.items()
+                             if k in getattr(plugin.init, '_argnames', [])}
+                print(plugin.init._argnames, kwargs)
+                if arguments:
+                    plugin_config = plugin.init.func(config=config,
+                                                     **arguments)
+                    f.write('\n# {} plugin configuration\n'.format(name))
+                    yaml.dump({name: plugin_config}, f,
+                              default_flow_style=False)
+
     print('The configuration file for your project has been generated. '
           'Remember to add {} to source control.'.format(config_file))
-
-
-def _load_config(config_file='slam.yaml'):
-    try:
-        with open(config_file) as f:
-            return yaml.load(f)
-    except IOError:
-        # there is no config file in the current directory
-        raise RuntimeError('Config file {} not found. Did you run '
-                           '"slam init"?'.format(config_file))
 
 
 def _run_command(cmd):
@@ -109,9 +126,8 @@ def _generate_lambda_handler(config, output='.slam/handler.py'):
     with open(os.path.join(os.path.dirname(__file__),
                            'templates/handler.py')) as f:
         template = f.read()
-    template = jinja2.Environment(
-        lstrip_blocks=True, trim_blocks=True).from_string(template).render(
-            module=config['wsgi']['module'], app=config['wsgi']['app'])
+    template = render_template(template, module=config['wsgi']['module'],
+                               app=config['wsgi']['app'])
     with open(output, 'wt') as f:
         f.write(template + '\n')
 
@@ -193,11 +209,9 @@ def _get_cfn_template(config, raw=False, custom_template=None):
     for s in stages:
         vars[s] = (config['environment'] or {}).copy()
         vars[s].update(config['stage_environments'][s] or {})
-    template = jinja2.Environment(
-        lstrip_blocks=True, trim_blocks=True).from_string(template).render(
-            stages=stages, devstage=config['devstage'], vars=vars,
-            dynamodb_tables=config.get('aws', {}).get('dynamodb_tables') or {})
-    return template
+    return render_template(
+        template, stages=stages, devstage=config['devstage'], vars=vars,
+        dynamodb_tables=config.get('aws', {}).get('dynamodb_tables') or {})
 
 
 def _print_status(config):
@@ -481,3 +495,22 @@ def template(raw, config_file):
     """Print the default Cloudformation deployment template."""
     config = _load_config(config_file)
     print(_get_cfn_template(config, raw=raw))
+
+
+# find any installed plugins and register them
+try:
+    import pkg_resources
+except ImportError:
+    pass
+else:
+    for ep in pkg_resources.iter_entry_points('slam_plugins'):
+        plugin = ep.load()
+
+        # add any init options to the main init command
+        if hasattr(plugin, 'init') and hasattr(plugin.init, '_arguments'):
+            for arg in plugin.init._arguments:
+                init.parser.add_argument(*arg[0], **arg[1])
+            init._arguments += plugin.init._arguments
+            init._argnames += plugin.init._argnames
+
+        plugins[ep.name] = plugin
