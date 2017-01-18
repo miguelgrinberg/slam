@@ -157,12 +157,6 @@ Optional arguments
   package must be a zip file in the format required by AWS Lambda. The zip
   files produced by the ``slam build`` command can be used here.
 
-- ``--template TEMPLATE``
-
-  Use a custom Cloudformation template instead of the default one. The
-  ``slam template`` or ``slam template --raw`` commands can be used to generate
-  a base template that can be customized to the project needs.
-
 - ``--stage STAGE``
 
   The stage that receives the updated Lambda function. By default this is the
@@ -200,12 +194,6 @@ Required arguments
 
 Optional arguments
 ------------------
-
-- ``--template TEMPLATE``
-
-  Use a custom Cloudformation template instead of the default one. The
-  ``slam template`` or ``slam template --raw`` commands can be used to generate
-  a base template that can be customized to the project needs.
 
 - ``--version VERSION``
 
@@ -281,12 +269,7 @@ None.
 Optional arguments
 ------------------
 
-- ``--raw``
-
-  Return the original template, before it is processed with information from
-  the configuration file. The raw template contains Jinja2 templating constructs
-  that generate dynamic portions based on configuration data. When modifying the
-  raw template, care must be taken in now altering the Jinja2 constructs.
+None.
 
 Example
 -------

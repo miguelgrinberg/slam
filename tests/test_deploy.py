@@ -5,6 +5,7 @@ import unittest
 import boto3
 import botocore
 
+from slam import cfn
 from slam import cli
 
 BUILTIN = '__builtin__'
@@ -68,36 +69,16 @@ class DeployTests(unittest.TestCase):
         self.assertEqual(cli._get_from_stack(stack, 'Output', 'x'), None)
         self.assertRaises(ValueError, cli._get_from_stack, stack, 'Foo', 'bar')
 
-    def test_get_template_raw(self):
-        tpl = cli._get_cfn_template({}, raw=True)
-        with open('slam/templates/cfn.yaml') as f:
-            src = f.read()
-        self.assertEqual(tpl, src)
-
-    def test_get_template_raw_custom(self):
-        tpl = cli._get_cfn_template({}, raw=True,
-                                    custom_template='slam/templates/slam.yaml')
-        with open('slam/templates/slam.yaml') as f:
-            src = f.read()
-        self.assertEqual(tpl, src)
-
-    def test_get_template_raw_custom_config(self):
-        tpl = cli._get_cfn_template(
-            {'aws': {'cfn_template': 'slam/templates/slam.yaml'}}, raw=True)
-        with open('slam/templates/slam.yaml') as f:
-            src = f.read()
-        self.assertEqual(tpl, src)
-
     def test_get_template(self):
-        tpl = cli._get_cfn_template(config)
+        tpl = cfn.get_cfn_template(config)
         self.assertTrue(tpl.startswith(
-            '---\nAWSTemplateFormatVersion: "2010-09-09"\n'))
+            '{"AWSTemplateFormatVersion": "2010-09-09"'))
         try:
-            cfn = boto3.client('cloudformation')
+            client = boto3.client('cloudformation')
         except botocore.exceptions.BotoCoreError:
             pass
         else:
-            cfn.validate_template(TemplateBody=tpl)
+            client.validate_template(TemplateBody=tpl)
         # TODO: find an offline cloudformation validator that can be used here
         # without having to have aws creds
 
@@ -145,14 +126,14 @@ class DeployTests(unittest.TestCase):
 
     @mock.patch('slam.cli.os.remove')
     @mock.patch('slam.cli._print_status')
-    @mock.patch('slam.cli._get_cfn_template', return_value='cfn-template')
+    @mock.patch('slam.cli.get_cfn_template', return_value='cfn-template')
     @mock.patch('slam.cli._ensure_bucket_exists')
     @mock.patch('slam.cli._build', return_value='lambda.zip')
     @mock.patch('slam.cli._get_aws_region', return_value='us-east-1')
     @mock.patch('slam.cli.boto3.client')
     @mock.patch('slam.cli._load_config', return_value=config)
     def test_deploy_first(self, _load_config, client, _get_aws_region, _build,
-                          _ensure_bucket_exists, _get_cfn_template,
+                          _ensure_bucket_exists, get_cfn_template,
                           _print_status, remove):
         mock_s3 = mock.MagicMock()
         mock_cfn = mock.MagicMock()
@@ -174,10 +155,6 @@ class DeployTests(unittest.TestCase):
                 {'ParameterKey': 'LambdaS3Bucket', 'ParameterValue': 'bucket'},
                 {'ParameterKey': 'LambdaS3Key',
                  'ParameterValue': 'lambda.zip'},
-                {'ParameterKey': 'LambdaTimeout', 'ParameterValue': '1'},
-                {'ParameterKey': 'LambdaMemorySize', 'ParameterValue': '128'},
-                {'ParameterKey': 'APIName', 'ParameterValue': 'foo'},
-                {'ParameterKey': 'APIDescription', 'ParameterValue': 'bar'},
                 {'ParameterKey': 'DevVersion', 'ParameterValue': '$LATEST'},
                 {'ParameterKey': 'ProdVersion', 'ParameterValue': '$LATEST'},
                 {'ParameterKey': 'StagingVersion',
@@ -189,14 +166,14 @@ class DeployTests(unittest.TestCase):
 
     @mock.patch('slam.cli.os.remove')
     @mock.patch('slam.cli._print_status')
-    @mock.patch('slam.cli._get_cfn_template', return_value='cfn-template')
+    @mock.patch('slam.cli.get_cfn_template', return_value='cfn-template')
     @mock.patch('slam.cli._ensure_bucket_exists')
     @mock.patch('slam.cli._build', return_value='lambda.zip')
     @mock.patch('slam.cli._get_aws_region', return_value='us-east-1')
     @mock.patch('slam.cli.boto3.client')
     @mock.patch('slam.cli._load_config', return_value=config)
     def test_deploy_update(self, _load_config, client, _get_aws_region, _build,
-                           _ensure_bucket_exists, _get_cfn_template,
+                           _ensure_bucket_exists, get_cfn_template,
                            _print_status, remove):
         mock_s3 = mock.MagicMock()
         mock_cfn = mock.MagicMock()
@@ -217,10 +194,6 @@ class DeployTests(unittest.TestCase):
                 {'ParameterKey': 'LambdaS3Bucket', 'ParameterValue': 'bucket'},
                 {'ParameterKey': 'LambdaS3Key',
                  'ParameterValue': 'lambda.zip'},
-                {'ParameterKey': 'LambdaTimeout', 'ParameterValue': '1'},
-                {'ParameterKey': 'LambdaMemorySize', 'ParameterValue': '128'},
-                {'ParameterKey': 'APIName', 'ParameterValue': 'foo'},
-                {'ParameterKey': 'APIDescription', 'ParameterValue': 'bar'},
                 {'ParameterKey': 'DevVersion', 'ParameterValue': '$LATEST'},
                 {'ParameterKey': 'ProdVersion', 'ParameterValue': '2'},
                 {'ParameterKey': 'StagingVersion',
@@ -233,7 +206,7 @@ class DeployTests(unittest.TestCase):
 
     @mock.patch('slam.cli.os.remove')
     @mock.patch('slam.cli._print_status')
-    @mock.patch('slam.cli._get_cfn_template', return_value='cfn-template')
+    @mock.patch('slam.cli.get_cfn_template', return_value='cfn-template')
     @mock.patch('slam.cli._ensure_bucket_exists')
     @mock.patch('slam.cli._build', return_value='lambda.zip')
     @mock.patch('slam.cli._get_aws_region', return_value='us-east-1')
@@ -241,7 +214,7 @@ class DeployTests(unittest.TestCase):
     @mock.patch('slam.cli._load_config', return_value=config)
     def test_deploy_with_package(self, _load_config, client, _get_aws_region,
                                  _build, _ensure_bucket_exists,
-                                 _get_cfn_template, _print_status, remove):
+                                 get_cfn_template, _print_status, remove):
         mock_s3 = mock.MagicMock()
         mock_cfn = mock.MagicMock()
         mock_cfn.describe_stacks.side_effect = \
@@ -261,14 +234,14 @@ class DeployTests(unittest.TestCase):
 
     @mock.patch('slam.cli.os.remove')
     @mock.patch('slam.cli._print_status')
-    @mock.patch('slam.cli._get_cfn_template', return_value='cfn-template')
+    @mock.patch('slam.cli.get_cfn_template', return_value='cfn-template')
     @mock.patch('slam.cli._ensure_bucket_exists')
     @mock.patch('slam.cli._build', return_value='lambda.zip')
     @mock.patch('slam.cli._get_aws_region', return_value='us-east-1')
     @mock.patch('slam.cli.boto3.client')
     @mock.patch('slam.cli._load_config', return_value=config)
     def test_deploy_no_lambda(self, _load_config, client, _get_aws_region,
-                              _build, _ensure_bucket_exists, _get_cfn_template,
+                              _build, _ensure_bucket_exists, get_cfn_template,
                               _print_status, remove):
         mock_s3 = mock.MagicMock()
         mock_cfn = mock.MagicMock()
@@ -284,10 +257,6 @@ class DeployTests(unittest.TestCase):
                 {'ParameterKey': 'LambdaS3Bucket', 'ParameterValue': 'bucket'},
                 {'ParameterKey': 'LambdaS3Key',
                  'ParameterValue': 'lambda-old.zip'},
-                {'ParameterKey': 'LambdaTimeout', 'ParameterValue': '1'},
-                {'ParameterKey': 'LambdaMemorySize', 'ParameterValue': '128'},
-                {'ParameterKey': 'APIName', 'ParameterValue': 'foo'},
-                {'ParameterKey': 'APIDescription', 'ParameterValue': 'bar'},
                 {'ParameterKey': 'DevVersion', 'ParameterValue': '$LATEST'},
                 {'ParameterKey': 'ProdVersion', 'ParameterValue': '2'},
                 {'ParameterKey': 'StagingVersion',
@@ -298,14 +267,14 @@ class DeployTests(unittest.TestCase):
 
     @mock.patch('slam.cli.os.remove')
     @mock.patch('slam.cli._print_status')
-    @mock.patch('slam.cli._get_cfn_template', return_value='cfn-template')
+    @mock.patch('slam.cli.get_cfn_template', return_value='cfn-template')
     @mock.patch('slam.cli._ensure_bucket_exists')
     @mock.patch('slam.cli._build', return_value='lambda.zip')
     @mock.patch('slam.cli._get_aws_region', return_value='us-east-1')
     @mock.patch('slam.cli.boto3.client')
     @mock.patch('slam.cli._load_config', return_value=config)
     def test_deploy_rebuild(self, _load_config, client, _get_aws_region,
-                            _build, _ensure_bucket_exists, _get_cfn_template,
+                            _build, _ensure_bucket_exists, get_cfn_template,
                             _print_status, remove):
         mock_s3 = mock.MagicMock()
         mock_cfn = mock.MagicMock()
@@ -318,14 +287,14 @@ class DeployTests(unittest.TestCase):
 
     @mock.patch('slam.cli.os.remove')
     @mock.patch('slam.cli._print_status')
-    @mock.patch('slam.cli._get_cfn_template', return_value='cfn-template')
+    @mock.patch('slam.cli.get_cfn_template', return_value='cfn-template')
     @mock.patch('slam.cli._ensure_bucket_exists')
     @mock.patch('slam.cli._build', return_value='lambda.zip')
     @mock.patch('slam.cli._get_aws_region', return_value='us-east-1')
     @mock.patch('slam.cli.boto3.client')
     @mock.patch('slam.cli._load_config', return_value=config)
     def test_deploy_stage(self, _load_config, client, _get_aws_region, _build,
-                          _ensure_bucket_exists, _get_cfn_template,
+                          _ensure_bucket_exists, get_cfn_template,
                           _print_status, remove):
         mock_s3 = mock.MagicMock()
         mock_cfn = mock.MagicMock()
@@ -339,10 +308,6 @@ class DeployTests(unittest.TestCase):
                 {'ParameterKey': 'LambdaS3Bucket', 'ParameterValue': 'bucket'},
                 {'ParameterKey': 'LambdaS3Key',
                  'ParameterValue': 'lambda.zip'},
-                {'ParameterKey': 'LambdaTimeout', 'ParameterValue': '1'},
-                {'ParameterKey': 'LambdaMemorySize', 'ParameterValue': '128'},
-                {'ParameterKey': 'APIName', 'ParameterValue': 'foo'},
-                {'ParameterKey': 'APIDescription', 'ParameterValue': 'bar'},
                 {'ParameterKey': 'DevVersion', 'ParameterValue': '$LATEST'},
                 {'ParameterKey': 'ProdVersion', 'ParameterValue': '2'},
                 {'ParameterKey': 'StagingVersion',
@@ -351,35 +316,14 @@ class DeployTests(unittest.TestCase):
 
     @mock.patch('slam.cli.os.remove')
     @mock.patch('slam.cli._print_status')
-    @mock.patch('slam.cli._get_cfn_template', return_value='cfn-template')
-    @mock.patch('slam.cli._ensure_bucket_exists')
-    @mock.patch('slam.cli._build', return_value='lambda.zip')
-    @mock.patch('slam.cli._get_aws_region', return_value='us-east-1')
-    @mock.patch('slam.cli.boto3.client')
-    @mock.patch('slam.cli._load_config', return_value=config)
-    def test_deploy_custom_template(self, _load_config, client,
-                                    _get_aws_region, _build,
-                                    _ensure_bucket_exists, _get_cfn_template,
-                                    _print_status, remove):
-        mock_s3 = mock.MagicMock()
-        mock_cfn = mock.MagicMock()
-        mock_cfn.describe_stacks.return_value = describe_stacks_response
-        client.side_effect = [mock_s3, mock_cfn]
-
-        cli.main(['deploy', '--template', 'foo.yaml'])
-        _get_cfn_template.assert_called_once_with(config,
-                                                  custom_template='foo.yaml')
-
-    @mock.patch('slam.cli.os.remove')
-    @mock.patch('slam.cli._print_status')
-    @mock.patch('slam.cli._get_cfn_template', return_value='cfn-template')
+    @mock.patch('slam.cli.get_cfn_template', return_value='cfn-template')
     @mock.patch('slam.cli._ensure_bucket_exists')
     @mock.patch('slam.cli._build', return_value='lambda.zip')
     @mock.patch('slam.cli._get_aws_region', return_value='us-east-1')
     @mock.patch('slam.cli.boto3.client')
     @mock.patch('slam.cli._load_config', return_value=config)
     def test_deploy_fail(self, _load_config, client, _get_aws_region, _build,
-                         _ensure_bucket_exists, _get_cfn_template,
+                         _ensure_bucket_exists, get_cfn_template,
                          _print_status, remove):
         mock_s3 = mock.MagicMock()
         mock_cfn = mock.MagicMock()
@@ -396,7 +340,7 @@ class DeployTests(unittest.TestCase):
 
     @mock.patch('slam.cli.os.remove')
     @mock.patch('slam.cli._print_status')
-    @mock.patch('slam.cli._get_cfn_template', return_value='cfn-template')
+    @mock.patch('slam.cli.get_cfn_template', return_value='cfn-template')
     @mock.patch('slam.cli._ensure_bucket_exists')
     @mock.patch('slam.cli._build', return_value='lambda.zip')
     @mock.patch('slam.cli._get_aws_region', return_value='us-east-1')
@@ -404,7 +348,7 @@ class DeployTests(unittest.TestCase):
     @mock.patch('slam.cli._load_config', return_value=config)
     def test_deploy_fail_no_lambda(self, _load_config, client, _get_aws_region,
                                    _build, _ensure_bucket_exists,
-                                   _get_cfn_template, _print_status, remove):
+                                   get_cfn_template, _print_status, remove):
         mock_s3 = mock.MagicMock()
         mock_cfn = mock.MagicMock()
         mock_cfn.describe_stacks.return_value = describe_stacks_response

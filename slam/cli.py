@@ -12,6 +12,7 @@ import climax
 from lambda_uploader.package import build_package
 import yaml
 
+from .cfn import get_cfn_template
 from .helpers import render_template
 
 plugins = {}
@@ -192,28 +193,6 @@ def _get_from_stack(stack, source, key):
     return value
 
 
-def _get_cfn_template(config, raw=False, custom_template=None):
-    if custom_template:
-        template_file = custom_template
-    elif 'aws' in config and config['aws'].get('cfn_template'):
-        template_file = config['aws']['cfn_template']
-    else:
-        template_file = os.path.join(os.path.dirname(__file__),
-                                     'templates/cfn.yaml')
-    with open(template_file) as f:
-        template = f.read()
-    if raw:
-        return template
-    stages = config['stage_environments'].keys()
-    vars = {}
-    for s in stages:
-        vars[s] = (config['environment'] or {}).copy()
-        vars[s].update(config['stage_environments'][s] or {})
-    return render_template(
-        template, stages=stages, devstage=config['devstage'], vars=vars,
-        dynamodb_tables=config.get('aws', {}).get('dynamodb_tables') or {})
-
-
 def _print_status(config):
     cfn = boto3.client('cloudformation')
     lmb = boto3.client('lambda')
@@ -254,16 +233,13 @@ def build(rebuild_deps, config_file):
 @climax.argument('--stage',
                  help=('Stage to deploy to. Defaults to the stage designated '
                        'as the development stage'))
-@climax.argument('--template', help='Custom cloudformation template to '
-                 'deploy.')
 @climax.argument('--lambda-package',
                  help='Custom lambda zip package to deploy.')
 @climax.argument('--no-lambda', action='store_true',
                  help='Do no deploy a new lambda.')
 @climax.argument('--rebuild-deps', action='store_true',
                  help='Reinstall all dependencies.')
-def deploy(stage, template, lambda_package, no_lambda, rebuild_deps,
-           config_file):
+def deploy(stage, lambda_package, no_lambda, rebuild_deps, config_file):
     """Deploy the project to the development stage."""
     config = _load_config(config_file)
     if stage is None:
@@ -306,17 +282,10 @@ def deploy(stage, template, lambda_package, no_lambda, rebuild_deps,
             os.remove(lambda_package)
 
     # prepare cloudformation template
-    template_body = _get_cfn_template(config, custom_template=template)
+    template_body = get_cfn_template(config)
     parameters = [
         {'ParameterKey': 'LambdaS3Bucket', 'ParameterValue': bucket},
         {'ParameterKey': 'LambdaS3Key', 'ParameterValue': lambda_package},
-        {'ParameterKey': 'LambdaTimeout',
-         'ParameterValue': str(config['aws']['lambda_timeout'])},
-        {'ParameterKey': 'LambdaMemorySize',
-         'ParameterValue': str(config['aws']['lambda_memory'])},
-        {'ParameterKey': 'APIName', 'ParameterValue': config['name']},
-        {'ParameterKey': 'APIDescription',
-         'ParameterValue': config['description']},
     ]
     stages = list(config['stage_environments'].keys())
     stages.sort()
@@ -367,10 +336,8 @@ def deploy(stage, template, lambda_package, no_lambda, rebuild_deps,
 @climax.argument('--version',
                  help=('Stage name or numeric version to publish. '
                        'Defaults to the development stage.'))
-@climax.argument('--template', help='Custom cloudformation template to '
-                 'deploy.')
 @climax.argument('stage', help='Stage to publish to.')
-def publish(version, template, stage, config_file):
+def publish(version, stage, config_file):
     """Publish a version of the project to a stage."""
     config = _load_config(config_file)
     cfn = boto3.client('cloudformation')
@@ -398,17 +365,10 @@ def publish(version, template, stage, config_file):
                                      'LambdaS3Key')
 
     # prepare cloudformation template
-    template_body = _get_cfn_template(config, custom_template=template)
+    template_body = get_cfn_template(config)
     parameters = [
         {'ParameterKey': 'LambdaS3Bucket', 'ParameterValue': bucket},
         {'ParameterKey': 'LambdaS3Key', 'ParameterValue': lambda_package},
-        {'ParameterKey': 'LambdaTimeout',
-         'ParameterValue': str(config['aws']['lambda_timeout'])},
-        {'ParameterKey': 'LambdaMemorySize',
-         'ParameterValue': str(config['aws']['lambda_memory'])},
-        {'ParameterKey': 'APIName', 'ParameterValue': config['name']},
-        {'ParameterKey': 'APIDescription',
-         'ParameterValue': config['description']},
     ]
     stages = list(config['stage_environments'].keys())
     stages.sort()
@@ -488,13 +448,10 @@ def status(config_file):
 
 
 @main.command()
-@climax.argument('--raw', action='store_true',
-                 help='Return template before it is processed with the '
-                 'configuration')
-def template(raw, config_file):
+def template(config_file):
     """Print the default Cloudformation deployment template."""
     config = _load_config(config_file)
-    print(_get_cfn_template(config, raw=raw))
+    print(get_cfn_template(config, pretty=True))
 
 
 # find any installed plugins and register them

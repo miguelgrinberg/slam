@@ -92,9 +92,9 @@ Cloudformation template, and then runs this template to make changes on your
 cloud account. The end result is that every single resource that is allocated
 for your deployment is owned by the Cloudformation template, making it easy to
 keep track of what resources are in use. And if you find the need to create a
-custom deployment that differs from the standard structure used by Slam, all you
-need to do is take Slam's Cloudformation template and modify it to suit your
-needs.
+custom deployment that differs from the standard structure used by Slam, it is
+possible to write plugins that extend Slam's Cloudformation template to suit
+different needs.
 
 Alternatives to Slam
 ====================

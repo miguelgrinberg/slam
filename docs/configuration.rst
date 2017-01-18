@@ -113,7 +113,7 @@ configuration file.
         the hash key must match the key selected for the table-level index.
 
       - ``project``
-      
+
         The attributes to project on this index. If set to ``"all"`` all table
         attributes are projected. Else it can be set to a list of attribute
         names to project, or to an empty list to only project the key
@@ -130,7 +130,7 @@ configuration file.
         Same as the table-level ``key`` attribute.
 
       - ``project``
-      
+
         The attributes to project on this index. If set to ``"all"`` all table
         attributes are projected. Else it can be set to a list of attribute
         names to project, or to an empty list to only project the key
@@ -149,7 +149,7 @@ configuration file.
             id: "S"
           key: "id"
           provisioned_throughput: [1, 1]
-        
+
         # a more complex table with hash/sort keys and secondary indexes
         mytable2:
           attributes:

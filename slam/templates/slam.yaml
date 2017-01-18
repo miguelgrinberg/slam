@@ -78,9 +78,3 @@ aws:
       key: "id"
       provisioned_throughput: [1, 1]
     {% endfor %}
-
-  # custom cloudformation template
-  # leave empty to use the default cloudformation template
-  # you can use "slam template" or "slam template --raw" to export the default
-  # template and then add your customizations
-  cfn_template:
