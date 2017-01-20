@@ -7,12 +7,11 @@ the end of this tutorial you will be familiar with most features of Slam, and
 will have a small Python API deployed to AWS Lambda and API Gateway.
 
 The screencast below is a recorded run through the entire tutorial. Feel free
-to use it as a reference when you go through the steps yourself. At any time you
-can pause the screencast, select any text and copy/paste it!
+to use it as a reference when you go through the steps yourself.
 
 .. raw:: html
 
-    <script type="text/javascript" src="https://asciinema.org/a/98429.js" id="asciicast-98429" async></script>
+    <iframe width="660" height="371" src="https://www.youtube.com/embed/9eoL6oGiodw" frameborder="0" allowfullscreen></iframe>
 
 Installing the Tutorial Project
 ===============================

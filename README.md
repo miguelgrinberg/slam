@@ -10,7 +10,7 @@ deployments of Python web applications that adhere to the WSGI protocol to
 If you have 10 minutes to spare, you can watch a screencast in which the main
 features of slam are demonstrated:
 
-<a href="https://asciinema.org/a/98429?autoplay=1"><img src="https://asciinema.org/a/98429.png" alt="Slam tutorial" width="500"></a>
+[![Slam Demonstration](https://img.youtube.com/vi/9eoL6oGiodw/0.jpg)](https://www.youtube.com/watch?v=9eoL6oGiodw)
 
 Or if you prefer something more formal, have a look at the 
 [documentation](http://slam-python.readthedocs.io/en/latest/), which also
