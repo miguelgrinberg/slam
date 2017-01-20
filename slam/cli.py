@@ -12,10 +12,9 @@ import climax
 from lambda_uploader.package import build_package
 import yaml
 
+from . import plugins
 from .cfn import get_cfn_template
 from .helpers import render_template
-
-plugins = {}
 
 
 @climax.group()
@@ -36,8 +35,8 @@ def _load_config(config_file='slam.yaml'):
 
 
 @main.command()
-@climax.argument('--dynamodb-tables',
-                 help='Comma-separated list of table names.')
+# @climax.argument('--dynamodb-tables',
+#                  help='Comma-separated list of table names.')
 @climax.argument('--requirements', default='requirements.txt',
                  help='The location of the project\'s requirements file.')
 @climax.argument('--stages', default='dev',
@@ -56,7 +55,7 @@ def _load_config(config_file='slam.yaml'):
 @climax.argument('wsgi_app',
                  help='The WSGI app instance, in the format module:app.')
 def init(name, description, bucket, timeout, memory, stages, requirements,
-         dynamodb_tables, wsgi_app, config_file, **kwargs):
+         wsgi_app, config_file, **kwargs):
     """Generate a configuration file."""
     if os.path.exists(config_file):
         raise RuntimeError('Please delete the old version {} if you want to '
@@ -72,8 +71,6 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
         bucket = name
 
     stages = [s.strip() for s in stages.split(',')]
-    tables = [s.strip() for s in dynamodb_tables.split(',')] \
-        if dynamodb_tables is not None else []
 
     # generate slam.yaml
     template_file = os.path.join(os.path.dirname(__file__),
@@ -84,7 +81,7 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
                                module=module, app=app, bucket=bucket,
                                timeout=timeout, memory=memory,
                                requirements=requirements, stages=stages,
-                               devstage=stages[0], tables=tables)
+                               devstage=stages[0])
     with open(config_file, 'wt') as f:
         f.write(template)
 
@@ -94,11 +91,11 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
             if hasattr(plugin, 'init'):
                 arguments = {k: v for k, v in kwargs.items()
                              if k in getattr(plugin.init, '_argnames', [])}
-                print(plugin.init._argnames, kwargs)
                 if arguments:
-                    plugin_config = plugin.init.func(config=config,
-                                                     **arguments)
-                    f.write('\n# {} plugin configuration\n'.format(name))
+                    header, plugin_config = plugin.init.func(config=config,
+                                                             **arguments)
+                    f.write('\n\n# {} plugin configuration\n'.format(name))
+                    f.write(header)
                     yaml.dump({name: plugin_config}, f,
                               default_flow_style=False)
 

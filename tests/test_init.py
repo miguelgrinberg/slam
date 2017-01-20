@@ -75,9 +75,8 @@ class InitTests(unittest.TestCase):
         with open('slam.yaml') as f:
             cfg = yaml.load(f)
         t = {'attributes': {'id': 'S'}, 'key': 'id',
-             'provisioned_throughput': [1, 1]}
-        self.assertEqual(cfg['aws']['dynamodb_tables'],
-                         {'a': t, 'b': t, 'c': t})
+             'read_throughput': 1, 'write_throughput': 1}
+        self.assertEqual(cfg['dynamodb_tables'], {'a': t, 'b': t, 'c': t})
 
     def test_init_with_invalid_name(self):
         self.assertRaises(ValueError, cli.main,

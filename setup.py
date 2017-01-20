@@ -16,6 +16,9 @@ setup(
     entry_points={
         'console_scripts': [
             'slam = slam.cli:main'
+        ],
+        'slam_plugins': [
+           'dynamodb_tables = slam.plugins.dynamodb'
         ]
     },
     install_requires=[

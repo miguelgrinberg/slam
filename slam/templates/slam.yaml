@@ -43,38 +43,3 @@ aws:
 
   # memory in MB for the lambda function
   lambda_memory: {{memory}}
-
-  # dynamodb tables
-  dynamodb_tables:
-    # example of a simple table:
-    # mytable:
-    #   attributes:
-    #     id: "S"
-    #   key: "id"
-    #   provisioned_throughput: [1, 1]
-    #
-    # a more complex example:
-    # mytable2:
-    #   attributes:
-    #     id: "S"
-    #     name: "S"
-    #     age: "N"
-    #   key: ["id", "name"]
-    #   provisioned_throughput: [1, 1]
-    #   local_secondary_indexes:
-    #     myindex:
-    #       key: ["id", "age"]
-    #       project:
-    #         - "name"
-    #   global_secondary_indexes:
-    #     myindex2:
-    #       key: ["age", "name"]
-    #       project: "all"
-    #       provisioned_throughput: [1, 1]
-    {% for table in tables %}
-    {{table}}:
-      attributes:
-        id: "S"
-      key: "id"
-      provisioned_throughput: [1, 1]
-    {% endfor %}
