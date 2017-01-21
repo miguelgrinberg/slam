@@ -22,9 +22,9 @@ two files:
 - `simple_api.py <https://github.com/miguelgrinberg/slam/raw/master/example/simple_api.py>`_
 - `requirements.txt <https://github.com/miguelgrinberg/slam/raw/master/example/requirements.txt>`_
 
-Download these two files by clicking on the links above and selecting "Save link
-as..." to write them to your disk. Please put the files in a brand new
-directory.
+Download these two files by right-clicking on the links above and selecting
+"Save link as..." to write them to your disk. Please put the files in a brand
+new directory.
 
 The project uses a `DynamoDB <https://aws.amazon.com/dynamodb>`_ database, which
 is a AWS managed database service. To be able to run this project locally, you

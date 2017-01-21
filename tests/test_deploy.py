@@ -34,7 +34,7 @@ describe_stacks_response = {'Stacks': [{
          'ParameterValue': '1'}
     ],
     'Outputs': [
-        {'OutputKey': 'FunctionArn', 'OutputValue': 'arn.foo'},
+        {'OutputKey': 'FunctionArn', 'OutputValue': 'arn:lambda:foo'},
         {'OutputKey': 'DevEndpoint', 'OutputValue': 'https://a.com'},
         {'OutputKey': 'ProdEndpoint', 'OutputValue': 'https://b.com'},
         {'OutputKey': 'StagingEndpoint',
@@ -88,7 +88,7 @@ class DeployTests(unittest.TestCase):
         mock_cfn = mock.MagicMock()
         mock_cfn.describe_stacks.return_value = {'Stacks': [{
             'Outputs': [
-                {'OutputKey': 'FunctionArn', 'OutputValue': 'arn.foo'},
+                {'OutputKey': 'FunctionArn', 'OutputValue': 'arn:lambda:foo'},
                 {'OutputKey': 'DevEndpoint', 'OutputValue': 'https://a.com'},
                 {'OutputKey': 'ProdEndpoint', 'OutputValue': 'https://b.com'},
                 {'OutputKey': 'StagingEndpoint',

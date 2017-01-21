@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import shutil
+import time
 
 import boto3
 import botocore
@@ -442,6 +443,62 @@ def status(config_file):
     """Show deployment status for the project."""
     config = _load_config(config_file)
     _print_status(config)
+
+
+@main.command()
+@climax.argument('--period', '-p', default='1m',
+                 help=('How far back to start, in weeks (1w), days (2d), '
+                       'hours (3h), minutes (4m) or seconds (5s). Default '
+                       'is 1m.'))
+@climax.argument('--tail', '-t', action='store_true',
+                 help='Tail the log stream')
+def logs(period, tail, config_file):
+    """Dump logs to the console."""
+    config = _load_config(config_file)
+    cfn = boto3.client('cloudformation')
+    try:
+        stack = cfn.describe_stacks(StackName=config['name'])['Stacks'][0]
+    except botocore.exceptions.ClientError:
+        print('{} has not been deployed yet.'.format(config['name']))
+        return
+    function = _get_from_stack(stack, 'Output', 'FunctionArn').split(':')[-1]
+
+    try:
+        start = float(period[:-1])
+    except ValueError:
+        raise ValueError('Invalid period ' + period)
+    if period[-1] == 's':
+        start = time.time() - start
+    elif period[-1] == 'm':
+        start = time.time() - start * 60
+    elif period[-1] == 'h':
+        start = time.time() - start * 60 * 60
+    elif period[-1] == 'd':
+        start = time.time() - start * 60 * 60 * 24
+    elif period[-1] == 'w':
+        start = time.time() - start * 60 * 60 * 24 * 7
+    else:
+        raise ValueError('Invalid period ' + period)
+    start = int(start * 1000)
+
+    logs = boto3.client('logs')
+    kwargs = {}
+    while True:
+        l = logs.filter_log_events(logGroupName='/aws/lambda/' + function,
+                                   startTime=start, interleaved=True, **kwargs)
+        for ev in l['events']:
+            tm = datetime.fromtimestamp(ev['timestamp'] / 1000)
+            print(tm.strftime('%b %d %X ') + ev['message'].strip())
+        if len(l['events']) > 0:
+            start = l['events'][-1]['timestamp'] + 1
+        if 'nextToken' not in l:
+            if tail:
+                time.sleep(5)
+                kwargs = {}
+                continue
+            else:
+                break
+        kwargs['nextToken'] = l['nextToken']
 
 
 @main.command()

@@ -24,7 +24,7 @@ class PublishTests(unittest.TestCase):
         mock_cfn.describe_stacks.assert_called_once_with(StackName='foo')
         get_cfn_template.assert_called_once_with(config)
         mock_lmb.publish_version.assert_called_once_with(
-            FunctionName='arn.foo')
+            FunctionName='arn:lambda:foo')
         mock_cfn.update_stack.assert_called_once_with(
             StackName='foo', TemplateBody='cfn-template',
             Parameters=[
