@@ -32,7 +32,8 @@ class InitTests(unittest.TestCase):
         self.assertEqual(cfg['wsgi']['module'], 'app_module')
         self.assertEqual(cfg['wsgi']['app'], 'app')
         self.assertEqual(cfg['devstage'], 'dev')
-        self.assertEqual(cfg['stage_environments'], {'dev': None})
+        self.assertEqual(cfg['stage_environments'],
+                         {'dev': {'log': True, 'variables': None}})
         self.assertEqual(cfg['name'], 'app-module')
         self.assertEqual(cfg['aws']['s3_bucket'], 'app-module')
         self.assertEqual(cfg['requirements'], 'requirements.txt')
@@ -66,9 +67,10 @@ class InitTests(unittest.TestCase):
         with open('slam.yaml') as f:
             cfg = yaml.load(f)
         self.assertEqual(cfg['devstage'], 'd')
-        self.assertEqual(cfg['stage_environments'], {'d': None,
-                                                     's': None,
-                                                     'p': None})
+        self.assertEqual(cfg['stage_environments'],
+                         {'d': {'log': True, 'variables': None},
+                          's': {'log': False, 'variables': None},
+                          'p': {'log': False, 'variables': None}})
 
     def test_init_with_tables(self):
         cli.main(['init', '--dynamodb-tables', 'a,b, c', 'app_module:app'])

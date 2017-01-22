@@ -25,8 +25,8 @@ def _get_cfn_parameters(config):
 
 
 def _get_stage_variables(config, stage):
-    if config['stage_environments'][stage]:
-        stage_vars = config['stage_environments'][stage].copy()
+    if config['stage_environments'][stage].get('variables'):
+        stage_vars = config['stage_environments'][stage]['variables'].copy()
     else:
         stage_vars = {}
     if 'STAGE' not in stage_vars:
@@ -156,6 +156,35 @@ def _get_cfn_resources(config):
             }
         }
     }
+    res['APICloudWatchRole'] = {
+        'Type': 'AWS::IAM::Role',
+        'Properties': {
+            'AssumeRolePolicyDocument': {
+                'Version': '2012-10-17',
+                'Statement': [
+                    {
+                        'Effect': 'Allow',
+                        'Principal': {
+                            'Service': ['apigateway.amazonaws.com']
+                        },
+                        'Action': 'sts:AssumeRole'
+                    }
+                ]
+            },
+            'Path': '/',
+            'ManagedPolicyArns': ['arn:aws:iam::aws:policy/service-role/'
+                                  'AmazonAPIGatewayPushToCloudWatchLogs']
+        }
+    }
+    res['APIAccount'] = {
+        'Type': 'AWS::ApiGateway::Account',
+        'DependsOn': 'API',
+        'Properties': {
+            'CloudWatchRoleArn': {
+                'Fn::GetAtt': ['APICloudWatchRole', 'Arn']
+            }
+        }
+    }
     for stage in config['stage_environments'].keys():
         res[stage.title() + 'FunctionAlias'] = {
             'Type': 'AWS::Lambda::Alias',
@@ -171,6 +200,15 @@ def _get_cfn_resources(config):
                 'RestApiId': {'Ref': 'API'},
                 'StageName': stage,
                 'StageDescription': {
+                    'MethodSettings': [
+                        {
+                            'ResourcePath': '/*',
+                            'HttpMethod': '*',
+                            'LoggingLevel': 'INFO'
+                            if config['stage_environments'][stage].get('log')
+                            else 'ERROR',
+                        }
+                    ],
                     'Variables': _get_stage_variables(config, stage)
                 }
             }
@@ -205,6 +243,9 @@ def _get_cfn_outputs(config):
     outputs = collections.OrderedDict()
     outputs['FunctionArn'] = {
         'Value': {'Fn::GetAtt': ['Function', 'Arn']}
+    }
+    outputs['ApiId'] = {
+        'Value': {'Ref': 'API'}
     }
     for stage in config['stage_environments'].keys():
         outputs[stage.title() + 'Endpoint'] = {

@@ -53,17 +53,30 @@ Core Options
 
 - ``stage_environments``
 
-  A collection of stages. Each stage, can have a sub-collection of variables,
-  specified as key-value pairs, that are made available to the Lambda function
-  as environment variables, but only for the appropriate stage.
+  A collection of stages.
 
   Example::
 
     stage_environments:
       dev:
-        DEBUG: "1"
+        log: true
+        variables:
+          DEBUG: "1"
       prod:
-        DEBUG: "0"
+        log: false
+        variables:
+          DEBUG: "0"
+
+  - ``log``
+
+    Set to ``true`` to enable API Gateway logging on this stage, or ``false``
+    otherwise.
+
+  - ``variables``
+
+    A collection of variables, given as key-value pairs. These variables are
+    exposed as environment variables to the Lambda function when running on
+    the stage.
 
 - ``aws``
 

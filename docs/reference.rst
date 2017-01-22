@@ -279,6 +279,42 @@ Example
     $ slam template
     <template output dumped to the console>
 
+slam logs
+=========
+
+The ``slam logs`` command dumps logs to the console.
+
+.. program-output:: slam logs --help
+
+Required arguments
+------------------
+
+None.
+
+Optional arguments
+------------------
+
+- ``--stage STAGE``
+
+  The stage to dump logs for.
+
+- ``--period PERIOD``
+
+  How far back to start the log listing. The period can be given in weeks (1w),
+  days (2d), hours (3h), minutes (4m) or seconds (5s). The default is 1 minute.
+
+- ``--tail``
+
+  Dump new logs as they appear.
+
+Example
+-------
+
+::
+
+    $ slam logs
+    <log output dumped to the console>
+
 slam delete
 ===========
 

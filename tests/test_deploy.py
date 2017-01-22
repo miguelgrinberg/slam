@@ -35,6 +35,7 @@ describe_stacks_response = {'Stacks': [{
     ],
     'Outputs': [
         {'OutputKey': 'FunctionArn', 'OutputValue': 'arn:lambda:foo'},
+        {'OutputKey': 'ApiId', 'OutputValue': '123abc'},
         {'OutputKey': 'DevEndpoint', 'OutputValue': 'https://a.com'},
         {'OutputKey': 'ProdEndpoint', 'OutputValue': 'https://b.com'},
         {'OutputKey': 'StagingEndpoint',

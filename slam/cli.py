@@ -446,15 +446,21 @@ def status(config_file):
 
 
 @main.command()
+@climax.argument('--tail', '-t', action='store_true',
+                 help='Tail the log stream')
 @climax.argument('--period', '-p', default='1m',
                  help=('How far back to start, in weeks (1w), days (2d), '
                        'hours (3h), minutes (4m) or seconds (5s). Default '
                        'is 1m.'))
-@climax.argument('--tail', '-t', action='store_true',
-                 help='Tail the log stream')
-def logs(period, tail, config_file):
+@climax.argument('--stage',
+                 help=('Stage to show logs for. Defaults to the stage '
+                       'designated as the development stage'))
+def logs(stage, period, tail, config_file):
     """Dump logs to the console."""
     config = _load_config(config_file)
+    if stage is None:
+        stage = config['devstage']
+
     cfn = boto3.client('cloudformation')
     try:
         stack = cfn.describe_stacks(StackName=config['name'])['Stacks'][0]
@@ -462,6 +468,8 @@ def logs(period, tail, config_file):
         print('{} has not been deployed yet.'.format(config['name']))
         return
     function = _get_from_stack(stack, 'Output', 'FunctionArn').split(':')[-1]
+    version = _get_from_stack(stack, 'Parameter', stage.title() + 'Version')
+    api_id = _get_from_stack(stack, 'Output', 'ApiId')
 
     try:
         start = float(period[:-1])
@@ -482,23 +490,39 @@ def logs(period, tail, config_file):
     start = int(start * 1000)
 
     logs = boto3.client('logs')
-    kwargs = {}
+    api_log_group = 'API-Gateway-Execution-Logs_' + api_id + '/' + stage
+    lambda_log_group = '/aws/lambda/' + function
+    log_version = '[' + version + ']'
+    log_start = {lambda_log_group: start, api_log_group: start}
     while True:
-        l = logs.filter_log_events(logGroupName='/aws/lambda/' + function,
-                                   startTime=start, interleaved=True, **kwargs)
-        for ev in l['events']:
+        kwargs = {}
+        events = []
+        for log_group in [lambda_log_group, api_log_group]:
+            while True:
+                try:
+                    l = logs.filter_log_events(logGroupName=log_group,
+                                               startTime=log_start[log_group],
+                                               interleaved=True, **kwargs)
+                except botocore.exceptions.ClientError:
+                    # the log group does not exist yet
+                    l = {'events': []}
+                if log_group == lambda_log_group:
+                    events += [ev for ev in l['events']
+                               if log_version in ev['logStreamName']]
+                else:
+                    events += l['events']
+                if len(l['events']):
+                    log_start[log_group] = l['events'][-1]['timestamp'] + 1
+                if 'nextToken' not in l:
+                    break
+                kwargs['nextToken'] = l['nextToken']
+        events.sort(key=lambda ev: ev['timestamp'])
+        for ev in events:
             tm = datetime.fromtimestamp(ev['timestamp'] / 1000)
             print(tm.strftime('%b %d %X ') + ev['message'].strip())
-        if len(l['events']) > 0:
-            start = l['events'][-1]['timestamp'] + 1
-        if 'nextToken' not in l:
-            if tail:
-                time.sleep(5)
-                kwargs = {}
-                continue
-            else:
-                break
-        kwargs['nextToken'] = l['nextToken']
+        if not tail:
+            break
+        time.sleep(5)
 
 
 @main.command()
