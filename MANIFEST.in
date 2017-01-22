@@ -1,1 +1,2 @@
-include slam/templates/cfn.yaml slam/templates/slam.yaml slam/templates/handler.py
+include slam/templates/*
+include slam/plugins/*
