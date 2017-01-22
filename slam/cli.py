@@ -123,7 +123,7 @@ def _generate_lambda_handler(config, output='.slam/handler.py'):
         raise ValueError('Unsupported project type {}'.format(
             config.get('type', '')))
     with open(os.path.join(os.path.dirname(__file__),
-                           'templates/handler.py')) as f:
+                           'templates/handler.py.template')) as f:
         template = f.read()
     template = render_template(template, module=config['wsgi']['module'],
                                app=config['wsgi']['app'])
