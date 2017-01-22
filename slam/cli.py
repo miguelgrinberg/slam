@@ -409,12 +409,14 @@ def publish(version, stage, config_file):
 
 
 @main.command()
-def delete(config_file):
+@climax.argument('--no-logs', action='store_true', help='Do not delete logs.')
+def delete(no_logs, config_file):
     """Delete the project."""
     config = _load_config(config_file)
 
     s3 = boto3.client('s3')
     cfn = boto3.client('cloudformation')
+    logs = boto3.client('logs')
 
     try:
         stack = cfn.describe_stacks(StackName=config['name'])['Stacks'][0]
@@ -422,20 +424,31 @@ def delete(config_file):
         raise RuntimeError('This project has not been deployed yet.')
     bucket = _get_from_stack(stack, 'Parameter', 'LambdaS3Bucket')
     lambda_package = _get_from_stack(stack, 'Parameter', 'LambdaS3Key')
+    function = _get_from_stack(stack, 'Output', 'FunctionArn').split(':')[-1]
+    api_id = _get_from_stack(stack, 'Output', 'ApiId')
+    log_groups = ['API-Gateway-Execution-Logs_' + api_id + '/' + stage
+                  for stage in config['stage_environments'].keys()]
+    log_groups.append('/aws/lambda/' + function)
 
-    print('Deleting API...')
+    print('Deleting {}...'.format(config['name']))
     cfn.delete_stack(StackName=config['name'])
     waiter = cfn.get_waiter('stack_delete_complete')
     waiter.wait(StackName=config['name'])
 
+    if not no_logs:
+        print('Deleting logs...')
+        for log_group in log_groups:
+            try:
+                logs.delete_log_group(logGroupName=log_group)
+            except botocore.exceptions.ClientError:
+                print('  Log group {} could not be deleted.'.format(log_group))
+
+    print('Deleting files...')
     try:
         s3.delete_object(Bucket=bucket, Key=lambda_package)
         s3.delete_bucket(Bucket=bucket)
     except botocore.exceptions.ClientError:
-        print('{} has been deleted, but the S3 bucket {} could not be '
-              'deleted.'.format(config['name'], bucket))
-    else:
-        print('{} has been deleted.'.format(config['name']))
+        print('  S3 bucket {} could not be deleted.'.format(bucket))
 
 
 @main.command()

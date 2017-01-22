@@ -330,7 +330,9 @@ None.
 Optional arguments
 ------------------
 
-None.
+- ``--no-logs``
+
+  Do not delete the project logs.
 
 Example
 -------
@@ -338,5 +340,6 @@ Example
 ::
 
     $ slam delete
-    Deleting API...
-    simple-api has been deleted.
+    Deleting api...
+    Deleting logs...
+    Deleting files...
