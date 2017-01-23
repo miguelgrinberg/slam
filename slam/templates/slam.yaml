@@ -21,8 +21,8 @@ requirements: "{{requirements}}"
 devstage: "{{devstage}}"
 
 # environment variables common to all stages
-# add any variables in this section as "key: value" pairs
 environment:
+    # define variables here as "key: value" pairs
 
 # environment variables specific to each stage
 # add or remove stages by editing the entries in this section

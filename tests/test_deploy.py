@@ -15,12 +15,14 @@ if sys.version_info >= (3, 0):
 config = {
     'name': 'foo',
     'description': 'bar',
-    'stage_environments': {'dev': {}, 'prod': {}, 'staging': {}},
+    'stage_environments': {'dev': {'log': True, 'variables': {'STAGE': 'x'}},
+                           'prod': {'log': False, 'variables': {'FOO': 'bar'}},
+                           'staging': {'log': False}},
     'environment': {'abc': 'def'},
     'devstage': 'dev',
     'aws': {'s3_bucket': 'bucket',
-            'lambda_timeout': 1,
-            'lambda_memory': 128}
+            'lambda_timeout': 7,
+            'lambda_memory': 512}
 }
 
 describe_stacks_response = {'Stacks': [{

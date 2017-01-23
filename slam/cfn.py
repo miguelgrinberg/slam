@@ -67,8 +67,8 @@ def _get_cfn_resources(config):
                 'S3Key': {'Ref': 'LambdaS3Key'}
             },
             'Role': {'Fn::GetAtt': ['FunctionExecutionRole', 'Arn']},
-            'Timeout': config.get('lambda_timeout', 10),
-            'MemorySize': config.get('lambda_memory', 128),
+            'Timeout': config['aws'].get('lambda_timeout', 10),
+            'MemorySize': config['aws'].get('lambda_memory', 128),
             'Handler': 'handler.lambda_handler',
             'Runtime': 'python2.7'
         }
