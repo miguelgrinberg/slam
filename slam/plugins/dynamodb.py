@@ -84,7 +84,8 @@ def _get_dynamodb_policies(config):
                         'dynamodb:PutItem',
                         'dynamodb:Query',
                         'dynamodb:Scan',
-                        'dynamodb:UpdateItem'
+                        'dynamodb:UpdateItem',
+                        'dynamodb:DescribeTable'
                     ],
                     'Resource': resources
                 }
@@ -141,7 +142,8 @@ def _get_table_resource(config, stage, name):
                 'AttributeType': attr_type
             }
         )
-    read_units, write_units = table.get('provisioned_throughput', [1, 1])
+    read_units = table.get('read_throughput', 1)
+    write_units = table.get('write_throughput', 1)
     res = {
         'Type': 'AWS::DynamoDB::Table',
         'Properties': {
@@ -167,8 +169,8 @@ def _get_table_resource(config, stage, name):
     if table.get('global_secondary_indexes'):
         idxs = []
         for name, index in table['global_secondary_indexes'].items():
-            read_units, write_units = index.get('provisioned_throughput',
-                                                [1, 1])
+            read_units = index.get('read_throughput', 1)
+            write_units = index.get('write_throughput', 1)
             idx = {
                 'IndexName': name,
                 'KeySchema': _get_dynamodb_key_schema(index['key']),
@@ -180,7 +182,7 @@ def _get_table_resource(config, stage, name):
                 }
             }
             idxs.append(idx)
-        res['Properties']['LocalSecondaryIndexes'] = idx
+        res['Properties']['GlobalSecondaryIndexes'] = idx
     return res
 
 
