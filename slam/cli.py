@@ -2,6 +2,10 @@ from __future__ import print_function
 
 from datetime import datetime
 import os
+try:
+    import pkg_resources
+except ImportError:  # pragma: no cover
+    pkg_resources = None
 import re
 import subprocess
 import shutil
@@ -92,13 +96,12 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
             if hasattr(plugin, 'init'):
                 arguments = {k: v for k, v in kwargs.items()
                              if k in getattr(plugin.init, '_argnames', [])}
-                if arguments:
-                    header, plugin_config = plugin.init.func(config=config,
-                                                             **arguments)
-                    f.write('\n\n# {} plugin configuration\n'.format(name))
-                    f.write(header)
-                    yaml.dump({name: plugin_config}, f,
-                              default_flow_style=False)
+                header, plugin_config = plugin.init.func(config=config,
+                                                         **arguments)
+                f.write('\n\n# {} plugin configuration\n'.format(name))
+                f.write(header)
+                yaml.dump({name: plugin_config}, f,
+                          default_flow_style=False)
 
     print('The configuration file for your project has been generated. '
           'Remember to add {} to source control.'.format(config_file))
@@ -545,20 +548,20 @@ def template(config_file):
     print(get_cfn_template(config, pretty=True))
 
 
-# find any installed plugins and register them
-try:
-    import pkg_resources
-except ImportError:
-    pass
-else:
-    for ep in pkg_resources.iter_entry_points('slam_plugins'):
-        plugin = ep.load()
+def register_plugins():
+    """find any installed plugins and register them."""
+    if pkg_resources:  # pragma: no cover
+        for ep in pkg_resources.iter_entry_points('slam_plugins'):
+            plugin = ep.load()
 
-        # add any init options to the main init command
-        if hasattr(plugin, 'init') and hasattr(plugin.init, '_arguments'):
-            for arg in plugin.init._arguments:
-                init.parser.add_argument(*arg[0], **arg[1])
-            init._arguments += plugin.init._arguments
-            init._argnames += plugin.init._argnames
+            # add any init options to the main init command
+            if hasattr(plugin, 'init') and hasattr(plugin.init, '_arguments'):
+                for arg in plugin.init._arguments:
+                    init.parser.add_argument(*arg[0], **arg[1])
+                init._arguments += plugin.init._arguments
+                init._argnames += plugin.init._argnames
 
-        plugins[ep.name] = plugin
+            plugins[ep.name] = plugin
+
+
+register_plugins()  # pragma: no cover
