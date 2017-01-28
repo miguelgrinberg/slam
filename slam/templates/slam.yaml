@@ -5,12 +5,8 @@
 name: "{{name}}"
 description: "{{description}}"
 
-# the deployment type
-# currently, only "wsgi" is supported
-type: wsgi
-
-# WSGI server details
-wsgi:
+# function details
+function:
   module: "{{module}}"
   app: "{{app}}"
 

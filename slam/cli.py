@@ -122,14 +122,11 @@ def _run_command(cmd):
 
 
 def _generate_lambda_handler(config, output='.slam/handler.py'):
-    if 'type' not in config or config['type'] != 'wsgi':
-        raise ValueError('Unsupported project type {}'.format(
-            config.get('type', '')))
     with open(os.path.join(os.path.dirname(__file__),
                            'templates/handler.py.template')) as f:
         template = f.read()
-    template = render_template(template, module=config['wsgi']['module'],
-                               app=config['wsgi']['app'])
+    template = render_template(template, module=config['function']['module'],
+                               app=config['function']['app'])
     with open(output, 'wt') as f:
         f.write(template + '\n')
 

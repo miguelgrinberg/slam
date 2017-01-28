@@ -28,9 +28,8 @@ class InitTests(unittest.TestCase):
         cli.main(['init', 'app_module:app'])
         with open('slam.yaml') as f:
             cfg = yaml.load(f)
-        self.assertEqual(cfg['type'], 'wsgi')
-        self.assertEqual(cfg['wsgi']['module'], 'app_module')
-        self.assertEqual(cfg['wsgi']['app'], 'app')
+        self.assertEqual(cfg['function']['module'], 'app_module')
+        self.assertEqual(cfg['function']['app'], 'app')
         self.assertEqual(cfg['devstage'], 'dev')
         self.assertEqual(cfg['stage_environments'],
                          {'dev': {'log': True, 'variables': None}})
@@ -42,8 +41,8 @@ class InitTests(unittest.TestCase):
         cli.main(['init', '--name', 'foo-bar', 'app_module:app'])
         with open('slam.yaml') as f:
             cfg = yaml.load(f)
-        self.assertEqual(cfg['wsgi']['module'], 'app_module')
-        self.assertEqual(cfg['wsgi']['app'], 'app')
+        self.assertEqual(cfg['function']['module'], 'app_module')
+        self.assertEqual(cfg['function']['app'], 'app')
         self.assertEqual(cfg['name'], 'foo-bar')
         self.assertEqual(cfg['aws']['s3_bucket'], 'foo-bar')
 
@@ -51,8 +50,8 @@ class InitTests(unittest.TestCase):
         cli.main(['init', '--bucket', 'foo-bar', 'app_module:app'])
         with open('slam.yaml') as f:
             cfg = yaml.load(f)
-        self.assertEqual(cfg['wsgi']['module'], 'app_module')
-        self.assertEqual(cfg['wsgi']['app'], 'app')
+        self.assertEqual(cfg['function']['module'], 'app_module')
+        self.assertEqual(cfg['function']['app'], 'app')
         self.assertEqual(cfg['name'], 'app-module')
         self.assertEqual(cfg['aws']['s3_bucket'], 'foo-bar')
 

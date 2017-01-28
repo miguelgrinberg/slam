@@ -22,17 +22,12 @@ class BuildTests(unittest.TestCase):
 
     def test_generate_lambda_handler(self):
         cli._generate_lambda_handler(
-            {'type': 'wsgi', 'wsgi': {'module': 'my_module', 'app': 'my_app'}},
+            {'function': {'module': 'my_module', 'app': 'my_app'}},
             output='_slam.yaml')
         with open('_slam.yaml') as f:
             handler = f.read()
         os.remove('_slam.yaml')
         self.assertIn('from my_module import my_app', handler)
-
-    def test_generate_lambda_handler_with_invalid_config(self):
-        self.assertRaises(ValueError, cli._generate_lambda_handler, {})
-        self.assertRaises(ValueError, cli._generate_lambda_handler,
-                          {'type': 'foo'})
 
     @mock.patch('slam.cli.os.path.exists', side_effect=[False, False, True])
     @mock.patch('slam.cli.os.mkdir')
