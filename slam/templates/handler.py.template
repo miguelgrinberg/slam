@@ -1,10 +1,13 @@
 from io import BytesIO
+import json
 import os
 import sys
 try:
     from urllib import quote
 except ImportError:  # pragma: no cover
     from urllib.parse import quote
+
+config = json.loads('{{config_json}}')
 
 
 def lambda_handler(event, context):
@@ -14,6 +17,21 @@ def lambda_handler(event, context):
     event, and invokes the WSGI application with it. The response is then
     formatted according to the proxy integration requirements.
     """
+    # load stage variables in the environment
+    for k, v in (event.get('stageVariables') or {}).items():
+        os.environ[k] = v
+
+    # add predefined variables to the environment
+    os.environ['LAMBDA_VERSION'] = context.function_version
+
+    # set stage variables
+    stage = os.environ.get('STAGE', event.get('stage', config['devstage']))
+    os.environ['STAGE'] = stage
+    for k, v in config['environment'].items():
+        os.environ[k] = v
+    for k, v in config['stage_environments'].get(stage, {}).items():
+        os.environ[k] = v
+
     query_string = None
     if event.get('queryStringParameters') is not None:
         query_string = '&'.join(
@@ -49,13 +67,6 @@ def lambda_handler(event, context):
     # add any headers that came with the request
     for h, v in headers.items():
         environ['HTTP_' + h.upper().replace('-', '_')] = v
-
-    # load stage variables in the environment
-    for k, v in (event.get('stageVariables') or {}).items():
-        os.environ[k] = v
-
-    # add predefined variables to the environment
-    os.environ['LAMBDA_VERSION'] = context.function_version
 
     status_headers = [None, None]
     body = []

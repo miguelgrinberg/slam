@@ -25,7 +25,10 @@ app.body = [b'']
 class HandlerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        config = {'function': {'module': 'tests.test_handler', 'app': 'app'}}
+        config = {'function': {'module': 'tests.test_handler', 'app': 'app'},
+                  'devstage': 'dev', 'environment': {'FOO': 'bar'},
+                  'stage_environments': {'dev': {'FOODEV': 'bardev'},
+                                         'prod': {'FOOPROD': 'barprod'}}}
         _generate_lambda_handler(config, 'slam/_handler.py')
 
     @classmethod
@@ -35,6 +38,11 @@ class HandlerTests(unittest.TestCase):
     def setUp(self):
         self.context = LambdaContext(function_version='foo-version')
 
+    def tearDown(self):
+        for var in ['STAGE', 'FOO', 'FOODEV', 'FOOPROD']:
+            if var in os.environ:
+                del os.environ[var]
+
     def test_default_request(self):
         from slam._handler import lambda_handler
         rv = lambda_handler({}, self.context)
@@ -42,6 +50,23 @@ class HandlerTests(unittest.TestCase):
         self.assertEqual(app.environ['lambda.context'], self.context)
         self.assertEqual(app.environ['REQUEST_METHOD'], 'GET')
         self.assertEqual(app.environ['PATH_INFO'], '/')
+        self.assertEqual(os.environ.get('STAGE'), 'dev')
+        self.assertEqual(os.environ.get('FOO'), 'bar')
+        self.assertEqual(os.environ.get('FOODEV'), 'bardev')
+        self.assertEqual(os.environ.get('FOOPROD'), None)
+        self.assertEqual(rv['statusCode'], 200)
+
+    def test_prod_request(self):
+        from slam._handler import lambda_handler
+        rv = lambda_handler({'stage': 'prod'}, self.context)
+        self.assertEqual(app.environ['lambda.event'], {'stage': 'prod'})
+        self.assertEqual(app.environ['lambda.context'], self.context)
+        self.assertEqual(app.environ['REQUEST_METHOD'], 'GET')
+        self.assertEqual(app.environ['PATH_INFO'], '/')
+        self.assertEqual(os.environ.get('STAGE'), 'prod')
+        self.assertEqual(os.environ.get('FOO'), 'bar')
+        self.assertEqual(os.environ.get('FOODEV'), None)
+        self.assertEqual(os.environ.get('FOOPROD'), 'barprod')
         self.assertEqual(rv['statusCode'], 200)
 
     def test_request_method(self):

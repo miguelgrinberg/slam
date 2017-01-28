@@ -18,20 +18,14 @@ devstage: "{{devstage}}"
 
 # environment variables common to all stages
 environment:
-    # define variables here as "key: value" pairs
+  # define variables here as "key: value" pairs
 
 # environment variables specific to each stage
 # add or remove stages by editing the entries in this section
 stage_environments:
   {% for stage in stages %}
   {{stage}}:
-      {% if stage == devstage %}
-      log: true
-      {% else %}
-      log: false
-      {% endif %}
-      variables:
-          # define stage specific variables here as "key: value" pairs
+    # define stage specific variables here as "key: value" pairs
   {% endfor %}
 
 # AWS specific options

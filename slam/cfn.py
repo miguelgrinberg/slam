@@ -24,16 +24,6 @@ def _get_cfn_parameters(config):
     return params
 
 
-def _get_stage_variables(config, stage):
-    if config['stage_environments'][stage].get('variables'):
-        stage_vars = config['stage_environments'][stage]['variables'].copy()
-    else:
-        stage_vars = {}
-    if 'STAGE' not in stage_vars:
-        stage_vars['STAGE'] = stage
-    return stage_vars
-
-
 def _get_cfn_resources(config):
     res = collections.OrderedDict()
     res['FunctionExecutionRole'] = {
@@ -205,11 +195,12 @@ def _get_cfn_resources(config):
                             'ResourcePath': '/*',
                             'HttpMethod': '*',
                             'LoggingLevel': 'INFO'
-                            if config['stage_environments'][stage].get('log')
-                            else 'ERROR',
+                            if stage == config['devstage'] else 'ERROR',
                         }
                     ],
-                    'Variables': _get_stage_variables(config, stage)
+                    'Variables': {
+                        'STAGE': stage
+                    }
                 }
             }
         }

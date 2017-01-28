@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 from datetime import datetime
+import json
 import os
 try:
     import pkg_resources
@@ -126,7 +127,9 @@ def _generate_lambda_handler(config, output='.slam/handler.py'):
                            'templates/handler.py.template')) as f:
         template = f.read()
     template = render_template(template, module=config['function']['module'],
-                               app=config['function']['app'])
+                               app=config['function']['app'],
+                               config_json=json.dumps(config,
+                                                      separators=(',', ':')))
     with open(output, 'wt') as f:
         f.write(template + '\n')
 

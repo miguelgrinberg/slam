@@ -12,14 +12,6 @@ class CloudformationTests(unittest.TestCase):
                       'StagingVersion', 'ProdVersion']:
             self.assertIn(param, params)
 
-    def test_stage_variables(self):
-        vars = cfn._get_stage_variables(config, 'dev')
-        self.assertEqual(vars, {'STAGE': 'x'})
-        vars = cfn._get_stage_variables(config, 'staging')
-        self.assertEqual(vars, {'STAGE': 'staging'})
-        vars = cfn._get_stage_variables(config, 'prod')
-        self.assertEqual(vars, {'STAGE': 'prod', 'FOO': 'bar'})
-
     def test_resources(self):
         resources = cfn._get_cfn_resources(config)
         for resource in ['FunctionExecutionRole', 'Function',
