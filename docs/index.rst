@@ -19,3 +19,4 @@ using the `Lambda <https://aws.amazon.com/lambda/>`_ and
    tutorial
    reference
    configuration
+   plugins

@@ -38,6 +38,8 @@ config_header = '''# example of a simple table:
 def init(config, dynamodb_tables):
     tables = [s.strip() for s in dynamodb_tables.split(',')] \
         if dynamodb_tables is not None else []
+    if not tables:
+        return
     table_config = {}
     for table in tables:
         table_config[table] = {

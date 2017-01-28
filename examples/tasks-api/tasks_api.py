@@ -60,7 +60,8 @@ def make_public_task(task):
 @app.route('/', methods=['GET'])
 def index():
     return jsonify({'name': 'tasks',
-                    'version': os.environ.get('LAMBDA_VERSION', 'dev')})
+                    'version': os.environ.get('LAMBDA_VERSION', 'dev'),
+                    'stage': os.environ['STAGE']})
 
 
 @app.route('/tasks', methods=['GET'])

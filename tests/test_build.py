@@ -1,3 +1,4 @@
+import inspect
 import mock
 import os
 import re
@@ -28,6 +29,8 @@ class BuildTests(unittest.TestCase):
             handler = f.read()
         os.remove('_slam.yaml')
         self.assertIn('from my_module import my_app', handler)
+        self.assertIn(''.join(inspect.getsourcelines(
+            cli._run_lambda_function)[0][1:]), handler)
 
     @mock.patch('slam.cli.os.path.exists', side_effect=[False, False, True])
     @mock.patch('slam.cli.os.mkdir')

@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 from datetime import datetime
+import inspect
 import json
 import os
 try:
@@ -58,16 +59,17 @@ def _load_config(config_file='slam.yaml'):
                  help='Description of the API.')
 @climax.argument('--name',
                  help='API name.')
-@climax.argument('wsgi_app',
-                 help='The WSGI app instance, in the format module:app.')
+@climax.argument('function',
+                 help='The function or callable to deploy, in the format '
+                      'module:function.')
 def init(name, description, bucket, timeout, memory, stages, requirements,
-         wsgi_app, config_file, **kwargs):
+         function, config_file, **kwargs):
     """Generate a configuration file."""
     if os.path.exists(config_file):
         raise RuntimeError('Please delete the old version {} if you want to '
                            'reconfigure your project.'.format(config_file))
 
-    module, app = wsgi_app.split(':')
+    module, app = function.split(':')
     if not name:
         name = module.replace('_', '-')
     if not re.match('^[a-zA-Z][-a-zA-Z0-9]*$', name):
@@ -91,18 +93,20 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
     with open(config_file, 'wt') as f:
         f.write(template)
 
-        # plugins
-        config = _load_config(config_file)
-        for name, plugin in plugins.items():
-            if hasattr(plugin, 'init'):
-                arguments = {k: v for k, v in kwargs.items()
-                             if k in getattr(plugin.init, '_argnames', [])}
-                header, plugin_config = plugin.init.func(config=config,
-                                                         **arguments)
-                f.write('\n\n# {} plugin configuration\n'.format(name))
-                f.write(header)
-                yaml.dump({name: plugin_config}, f,
-                          default_flow_style=False)
+    # plugins
+    config = _load_config(config_file)
+    for name, plugin in plugins.items():
+        if hasattr(plugin, 'init'):
+            arguments = {k: v for k, v in kwargs.items()
+                         if k in getattr(plugin.init, '_argnames', [])}
+            p = plugin.init.func(config=config, **arguments)
+            if p:
+                header, plugin_config = p
+                with open(config_file, 'at') as f:
+                    f.write('\n\n# {} plugin configuration\n'.format(name))
+                    f.write(header)
+                    yaml.dump({name: plugin_config}, f,
+                              default_flow_style=False)
 
     print('The configuration file for your project has been generated. '
           'Remember to add {} to source control.'.format(config_file))
@@ -122,12 +126,39 @@ def _run_command(cmd):
     return out
 
 
+def _run_lambda_function(event, context, app, config):  # pragma: no cover
+    """Run the function. This is the default when no plugins (such as wsgi)
+    define an alternative run function."""
+    args = event.get('args', [])
+    kwargs = event.get('kwargs', {})
+
+    # first attempt to invoke the function passing the lambda event and context
+    try:
+        ret = app(*args, event=event, context=context, **kwargs)
+    except TypeError:
+        # try again without passing the event and context
+        ret = app(*args, **kwargs)
+    return ret
+
+
 def _generate_lambda_handler(config, output='.slam/handler.py'):
+    """Generate a handler.py file for the lambda function start up."""
+    # Determine what the start up code is. The default is to just run the
+    # function, but it can be overriden by a plugin such as wsgi for a more
+    # elaborated way to run the function.
+    run_function = _run_lambda_function
+    for name, plugin in plugins.items():
+        if name in config and hasattr(plugin, 'run_lambda_function'):
+            run_function = plugin.run_lambda_function
+    run_code = ''.join(inspect.getsourcelines(run_function)[0][1:])
+
+    # generate handler.py
     with open(os.path.join(os.path.dirname(__file__),
                            'templates/handler.py.template')) as f:
         template = f.read()
     template = render_template(template, module=config['function']['module'],
                                app=config['function']['app'],
+                               run_lambda_function=run_code,
                                config_json=json.dumps(config,
                                                       separators=(',', ':')))
     with open(output, 'wt') as f:
@@ -301,7 +332,7 @@ def deploy(stage, lambda_package, no_lambda, rebuild_deps, config_file):
 
     # run the cloudformation template
     if previous_deployment is None:
-        print('Deploying {} to {}...'.format(config['name'], stage))
+        print('Deploying {}:{}...'.format(config['name'], stage))
         cfn.create_stack(StackName=config['name'], TemplateBody=template_body,
                          Parameters=parameters,
                          Capabilities=['CAPABILITY_IAM'])

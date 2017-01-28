@@ -83,6 +83,31 @@ Core Options
 
     The memory size, in megabytes, for the Lambda function.
 
+WSGI Plugin
+===========
+
+- ``wsgi``
+
+  If this configuration option exists, the project is assumed to be a web
+  application compliant with the WSGI protocol. The values under the
+  ``function`` option (described above) are assumed to be of the WSGI callable.
+
+  The following options provide more details on how the WSGI deployment should
+  be configured:
+
+  - ``deploy_api_gateway``
+
+    If set to ``true`` (the default), an API Gateway resource is created to map
+    to the Lambda function, so that HTTP requests can be made transparently. If
+    set to ``false``, no API Gateway resources are deployed.
+
+  - ``log_stages``
+
+    A list of stages that are configured to include API Gateway logging. For
+    included stages, API Gateway will produce detailed logging. For stages not
+    included, logging will only be produced for errors. This option is only
+    meaningful when ``deploy_api_gateway`` is set to ``true``.
+
 DynamoDB Plugin
 ===============
 

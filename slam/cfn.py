@@ -63,118 +63,6 @@ def _get_cfn_resources(config):
             'Runtime': 'python2.7'
         }
     }
-    res['API'] = {
-        'Type': 'AWS::ApiGateway::RestApi',
-        'Properties': {
-            'Body': {
-                'swagger': '2.0',
-                'info': {
-                    'title': config['name'],
-                    'description': config.get('description', '')
-                },
-                'schemes': ['https'],
-                'paths': {
-                    '/': {
-                        'x-amazon-apigateway-any-method': {
-                            'responses': {},
-                            'x-amazon-apigateway-integration': {
-                                'responses': {
-                                    'default': {
-                                        'statusCode': '200'
-                                    }
-                                },
-                                'uri': {
-                                    'Fn::Join': [
-                                        '',
-                                        [
-                                            'arn:aws:apigateway:',
-                                            {'Ref': 'AWS::Region'},
-                                            (':lambda:path/2015-03-31/'
-                                             'functions/'),
-                                            {'Fn::GetAtt': ['Function',
-                                                            'Arn']},
-                                            (':${stageVariables.STAGE}/'
-                                             'invocations')
-                                        ]
-                                    ]
-                                },
-                                'passthroughBehavior': 'when_no_match',
-                                'httpMethod': 'POST',
-                                'type': 'aws_proxy'
-                            }
-                        }
-                    },
-                    '/{proxy+}': {
-                        'x-amazon-apigateway-any-method': {
-                            'parameters': [
-                                {
-                                    'name': 'proxy',
-                                    'in': 'path',
-                                    'required': True,
-                                    'type': 'string'
-                                }
-                            ],
-                            'responses': {},
-                            'x-amazon-apigateway-integration': {
-                                'responses': {
-                                    'default': {
-                                        'statusCode': '200'
-                                    }
-                                },
-                                'uri': {
-                                    'Fn::Join': [
-                                        '',
-                                        [
-                                            'arn:aws:apigateway:',
-                                            {'Ref': 'AWS::Region'},
-                                            (':lambda:path/2015-03-31/'
-                                             'functions/'),
-                                            {'Fn::GetAtt': ['Function',
-                                                            'Arn']},
-                                            (':${stageVariables.STAGE}/'
-                                             'invocations')
-                                        ]
-                                    ]
-                                },
-                                'passthroughBehavior': 'when_no_match',
-                                'httpMethod': 'POST',
-                                'type': 'aws_proxy'
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    res['APICloudWatchRole'] = {
-        'Type': 'AWS::IAM::Role',
-        'Properties': {
-            'AssumeRolePolicyDocument': {
-                'Version': '2012-10-17',
-                'Statement': [
-                    {
-                        'Effect': 'Allow',
-                        'Principal': {
-                            'Service': ['apigateway.amazonaws.com']
-                        },
-                        'Action': 'sts:AssumeRole'
-                    }
-                ]
-            },
-            'Path': '/',
-            'ManagedPolicyArns': ['arn:aws:iam::aws:policy/service-role/'
-                                  'AmazonAPIGatewayPushToCloudWatchLogs']
-        }
-    }
-    res['APIAccount'] = {
-        'Type': 'AWS::ApiGateway::Account',
-        'DependsOn': 'API',
-        'Properties': {
-            'CloudWatchRoleArn': {
-                'Fn::GetAtt': ['APICloudWatchRole', 'Arn']
-            }
-        }
-    }
     for stage in config['stage_environments'].keys():
         res[stage.title() + 'FunctionAlias'] = {
             'Type': 'AWS::Lambda::Alias',
@@ -182,49 +70,6 @@ def _get_cfn_resources(config):
                 'Name': stage,
                 'FunctionName': {'Ref': 'Function'},
                 'FunctionVersion': {'Ref': stage.title() + 'Version'}
-            }
-        }
-        res[stage.title() + 'APIDeployment'] = {
-            'Type': 'AWS::ApiGateway::Deployment',
-            'Properties': {
-                'RestApiId': {'Ref': 'API'},
-                'StageName': stage,
-                'StageDescription': {
-                    'MethodSettings': [
-                        {
-                            'ResourcePath': '/*',
-                            'HttpMethod': '*',
-                            'LoggingLevel': 'INFO'
-                            if stage == config['devstage'] else 'ERROR',
-                        }
-                    ],
-                    'Variables': {
-                        'STAGE': stage
-                    }
-                }
-            }
-        }
-        res[stage.title() + 'APILambdaPermission'] = {
-            'Type': 'AWS::Lambda::Permission',
-            'DependsOn': stage.title() + 'FunctionAlias',
-            'Properties': {
-                'Action': 'lambda:InvokeFunction',
-                'FunctionName': {'Ref': stage.title() + 'FunctionAlias'},
-                'Principal': 'apigateway.amazonaws.com',
-                'SourceArn': {
-                    'Fn::Join': [
-                        '',
-                        [
-                            'arn:aws:execute-api:',
-                            {'Ref': 'AWS::Region'},
-                            ':',
-                            {'Ref': 'AWS::AccountId'},
-                            ':',
-                            {'Ref': 'API'},
-                            '/*/*/*'
-                        ]
-                    ]
-                }
             }
         }
     return res
@@ -235,24 +80,6 @@ def _get_cfn_outputs(config):
     outputs['FunctionArn'] = {
         'Value': {'Fn::GetAtt': ['Function', 'Arn']}
     }
-    outputs['ApiId'] = {
-        'Value': {'Ref': 'API'}
-    }
-    for stage in config['stage_environments'].keys():
-        outputs[stage.title() + 'Endpoint'] = {
-            'Value': {
-                'Fn::Join': [
-                    '',
-                    [
-                        'https://',
-                        {'Ref': 'API'},
-                        '.execute-api.',
-                        {'Ref': 'AWS::Region'},
-                        '.amazonaws.com/' + stage
-                    ]
-                ]
-            }
-        }
     return outputs
 
 

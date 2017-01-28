@@ -18,12 +18,13 @@ setup(
             'slam = slam.cli:main'
         ],
         'slam_plugins': [
+           'wsgi = slam.plugins.wsgi',
            'dynamodb_tables = slam.plugins.dynamodb'
         ]
     },
     install_requires=[
         'lambda_uploader',
-        'boto',
+        'boto3',
         'climax',
         'jinja2',
         'pyyaml',

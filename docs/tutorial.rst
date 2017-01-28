@@ -7,7 +7,9 @@ the end of this tutorial you will be familiar with most features of Slam, and
 will have a small Python API deployed to AWS Lambda and API Gateway.
 
 The screencast below is a recorded run through the entire tutorial. Feel free
-to use it as a reference when you go through the steps yourself.
+to use it as a reference when you go through the steps yourself, but note that
+it was created for an older release of slam, so there are minor variations in
+the commands used.
 
 .. raw:: html
 
@@ -19,8 +21,8 @@ Installing the Tutorial Project
 To do this tutorial, you need to download a small API project that consists of
 two files:
 
-- `simple_api.py <https://github.com/miguelgrinberg/slam/raw/master/example/simple_api.py>`_
-- `requirements.txt <https://github.com/miguelgrinberg/slam/raw/master/example/requirements.txt>`_
+- `tasks_api.py <https://github.com/miguelgrinberg/slam/raw/master/examples/tasks-api/tasks_api.py>`_
+- `requirements.txt <https://github.com/miguelgrinberg/slam/raw/master/examples/tasks-api/requirements.txt>`_
 
 Download these two files by right-clicking on the links above and selecting
 "Save link as..." to write them to your disk. Please put the files in a brand
@@ -37,7 +39,7 @@ these commands::
     $ virtualenv venv
     $ source venv/bin/activate
     (venv) $ pip install -r requirements.txt
-    (venv) $ python simple_api.py
+    (venv) $ python tasks_api.py
 
 If you are following this tutorial on Windows, the virtual environment
 activation command (2nd line above) is ``venv\Scripts\activate.bat``.
@@ -57,7 +59,7 @@ This will add a ``slam`` command to your virtual environment. You can use
 
 The ``slam init`` command can be used to create a starter configuration file::
 
-    (venv) $ slam init simple_api:app --stages dev,prod --dynamodb-tables tasks
+    (venv) $ slam init tasks_api:app --wsgi --stages dev,prod --dynamodb-tables tasks
     The configuration file for your project has been generated. Remember to add slam.yaml to source control.
 
 The above command generates a *slam.yaml* configuration file, with some initial
@@ -68,12 +70,14 @@ will hand edit this configuration file to make changes to your deployment.
 Let's go over the options included in the ``slam init`` command above one by
 one:
 
-- ``simple_api:app`` is a standard notation used by Python web servers to
+- ``tasks_api:app`` is a standard notation used by Python web servers to
   designate the WSGI entry point of the application. What appears to the left of
   the colon, is the package or module where the WSGI callable instance is
   located. The name that appears to the right of the colon is the variable that
   holds the WSGI application instance. Slam uses this information to know where
   it needs to forward HTTP requests as they come into the Lambda function.
+- ``--wsgi`` indicates that this project should be deployed as a WSGI complaint
+  web application.
 - ``--stages dev,prod`` creates two *stages*, named ``dev`` and ``prod``. In
   slam, stages are independent versions of your deployed project. Having
   multiple stages allows you to deploy new features on one stage for development

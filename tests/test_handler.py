@@ -4,7 +4,8 @@ import unittest
 
 from slam.cli import _generate_lambda_handler
 
-LambdaContext = namedtuple('LambdaContext', ['function_version'])
+LambdaContext = namedtuple('LambdaContext', ['function_version',
+                                             'invoked_function_arn'])
 
 
 def app(environ, start_response):
@@ -28,7 +29,8 @@ class HandlerTests(unittest.TestCase):
         config = {'function': {'module': 'tests.test_handler', 'app': 'app'},
                   'devstage': 'dev', 'environment': {'FOO': 'bar'},
                   'stage_environments': {'dev': {'FOODEV': 'bardev'},
-                                         'prod': {'FOOPROD': 'barprod'}}}
+                                         'prod': {'FOOPROD': 'barprod'}},
+                  'wsgi': {'deploy_api_gateway': True}}
         _generate_lambda_handler(config, 'slam/_handler.py')
 
     @classmethod
@@ -36,7 +38,10 @@ class HandlerTests(unittest.TestCase):
         pass
 
     def setUp(self):
-        self.context = LambdaContext(function_version='foo-version')
+        self.context = LambdaContext(
+            function_version='foo-version',
+            invoked_function_arn='arn:aws:lambda:us-east-1:123456:function:'
+                                 'foo-function:dev')
 
     def tearDown(self):
         for var in ['STAGE', 'FOO', 'FOODEV', 'FOOPROD']:
@@ -58,9 +63,14 @@ class HandlerTests(unittest.TestCase):
 
     def test_prod_request(self):
         from slam._handler import lambda_handler
-        rv = lambda_handler({'stage': 'prod'}, self.context)
+        context = LambdaContext(
+            function_version='foo-version',
+            invoked_function_arn='arn:aws:lambda:us-east-1:123456:function:'
+                                 'foo-function:prod')
+        context.invoked_function_arn.replace(':dev', ':prod')
+        rv = lambda_handler({'stage': 'prod'}, context)
         self.assertEqual(app.environ['lambda.event'], {'stage': 'prod'})
-        self.assertEqual(app.environ['lambda.context'], self.context)
+        self.assertEqual(app.environ['lambda.context'], context)
         self.assertEqual(app.environ['REQUEST_METHOD'], 'GET')
         self.assertEqual(app.environ['PATH_INFO'], '/')
         self.assertEqual(os.environ.get('STAGE'), 'prod')

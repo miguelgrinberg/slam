@@ -33,8 +33,7 @@ class CloudformationTests(unittest.TestCase):
 
     def test_outputs(self):
         outputs = cfn._get_cfn_outputs(config)
-        for output in ['FunctionArn', 'DevEndpoint', 'StagingEndpoint',
-                       'ProdEndpoint']:
+        for output in ['FunctionArn']:
             self.assertIn(output, outputs)
 
     @mock.patch('slam.cfn._get_cfn_outputs', return_value='baz')
