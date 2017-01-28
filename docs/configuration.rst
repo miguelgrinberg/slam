@@ -16,21 +16,17 @@ Core Options
 
   A description for the project.
 
-- ``type``
+- ``function``
 
-  The project type. At this time, the only supported project type is ``wsgi``.
-
-- ``wsgi``
-
-  Options that apply to projects of type ``wsgi``.
+  Options that describe the function that is being deployed.
 
   - ``module``
 
-    The Python module or package that contains the WSGI application callable.
+    The Python module or package that contains the application callable.
 
   - ``app``
 
-    The name of the variable that holds the WSGI application callable.
+    The name of the function or callable to invoke.
 
 - ``requirements``
 
@@ -53,30 +49,22 @@ Core Options
 
 - ``stage_environments``
 
-  A collection of stages.
+  A collection of stages. Each stage contains a collection of variables, given
+  as key-value pairs. These variables are exposed as environment variables to
+  the Lambda function when running on the stage.
 
   Example::
 
     stage_environments:
       dev:
-        log: true
-        variables:
-          DEBUG: "1"
+        DEBUG: "1"
       prod:
-        log: false
-        variables:
-          DEBUG: "0"
+        DEBUG: "0"
 
-  - ``log``
-
-    Set to ``true`` to enable API Gateway logging on this stage, or ``false``
-    otherwise.
-
-  - ``variables``
-
-    A collection of variables, given as key-value pairs. These variables are
-    exposed as environment variables to the Lambda function when running on
-    the stage.
+  Note: When using multiple stages, it is important to that any stage variables
+  defined in this section are given values for all stages. This is necessary
+  because sometimes AWS reuses Lambda containers, so environment variables from
+  a previous invocation on a different stage may still exist.
 
 - ``aws``
 
