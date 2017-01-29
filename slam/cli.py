@@ -603,14 +603,16 @@ def logs(stage, period, tail, config_file):
     start = int(start * 1000)
 
     logs = boto3.client('logs')
-    api_log_group = 'API-Gateway-Execution-Logs_' + api_id + '/' + stage
     lambda_log_group = '/aws/lambda/' + function
+    log_groups = [lambda_log_group]
+    if api_id:
+        log_groups.append('API-Gateway-Execution-Logs_' + api_id + '/' + stage)
     log_version = '[' + version + ']'
-    log_start = {lambda_log_group: start, api_log_group: start}
+    log_start = {g: start for g in log_groups}
     while True:
         kwargs = {}
         events = []
-        for log_group in [lambda_log_group, api_log_group]:
+        for log_group in log_groups:
             while True:
                 try:
                     l = logs.filter_log_events(logGroupName=log_group,
