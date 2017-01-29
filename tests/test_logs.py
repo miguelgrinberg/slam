@@ -1,3 +1,4 @@
+import copy
 import mock
 import sys
 import unittest
@@ -50,6 +51,39 @@ class LogsTests(unittest.TestCase):
         self.assertIn(' foo', mock_print.call_args_list[0][0][0])
         self.assertIn(' bar', mock_print.call_args_list[1][0][0])
         self.assertIn(' baz', mock_print.call_args_list[2][0][0])
+
+    @mock.patch(BUILTIN + '.print')
+    @mock.patch('slam.cli.time.time', return_value=1000)
+    @mock.patch('slam.cli.boto3.client')
+    @mock.patch('slam.cli._load_config', return_value=config)
+    def test_dev_no_api_logs(self, _load_config, client, time, mock_print):
+        mock_cfn = mock.MagicMock()
+        mock_logs = mock.MagicMock()
+        r = copy.deepcopy(describe_stacks_response)
+        r['Stacks'][0]['Outputs'] = [
+            {'OutputKey': 'FunctionArn', 'OutputValue': 'arn:lambda:foo'},
+        ]
+        mock_cfn.describe_stacks.return_value = r
+        mock_logs.filter_log_events.side_effect = [
+            {
+                'events': [
+                    {'logStreamName': 'abc[$LATEST]', 'timestamp': 990000,
+                     'message': 'foo'},
+                    {'logStreamName': 'abc[1]', 'timestamp': 990000,
+                     'message': 'foo'},
+                    {'logStreamName': 'abc[$LATEST]', 'timestamp': 990050,
+                     'message': 'baz'},
+                ]
+            }
+        ]
+        client.side_effect = [mock_cfn, mock_logs]
+
+        cli.main(['logs'])
+        mock_logs.filter_log_events.assert_called_once_with(
+            logGroupName='/aws/lambda/foo', startTime=940000, interleaved=True)
+        self.assertEqual(mock_print.call_count, 2)
+        self.assertIn(' foo', mock_print.call_args_list[0][0][0])
+        self.assertIn(' baz', mock_print.call_args_list[1][0][0])
 
     @mock.patch(BUILTIN + '.print')
     @mock.patch('slam.cli.time.time', return_value=1000)

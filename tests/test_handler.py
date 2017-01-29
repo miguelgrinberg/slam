@@ -67,9 +67,8 @@ class HandlerTests(unittest.TestCase):
             function_version='foo-version',
             invoked_function_arn='arn:aws:lambda:us-east-1:123456:function:'
                                  'foo-function:prod')
-        context.invoked_function_arn.replace(':dev', ':prod')
-        rv = lambda_handler({'stage': 'prod'}, context)
-        self.assertEqual(app.environ['lambda.event'], {'stage': 'prod'})
+        rv = lambda_handler({}, context)
+        self.assertEqual(app.environ['lambda.event'], {})
         self.assertEqual(app.environ['lambda.context'], context)
         self.assertEqual(app.environ['REQUEST_METHOD'], 'GET')
         self.assertEqual(app.environ['PATH_INFO'], '/')
@@ -77,6 +76,23 @@ class HandlerTests(unittest.TestCase):
         self.assertEqual(os.environ.get('FOO'), 'bar')
         self.assertEqual(os.environ.get('FOODEV'), None)
         self.assertEqual(os.environ.get('FOOPROD'), 'barprod')
+        self.assertEqual(rv['statusCode'], 200)
+
+    def test_no_stage_request(self):
+        from slam._handler import lambda_handler
+        context = LambdaContext(
+            function_version='foo-version',
+            invoked_function_arn='arn:aws:lambda:us-east-1:123456:function:'
+                                 'foo-function')
+        rv = lambda_handler({}, context)
+        self.assertEqual(app.environ['lambda.event'], {})
+        self.assertEqual(app.environ['lambda.context'], context)
+        self.assertEqual(app.environ['REQUEST_METHOD'], 'GET')
+        self.assertEqual(app.environ['PATH_INFO'], '/')
+        self.assertEqual(os.environ.get('STAGE'), 'dev')
+        self.assertEqual(os.environ.get('FOO'), 'bar')
+        self.assertEqual(os.environ.get('FOODEV'), 'bardev')
+        self.assertEqual(os.environ.get('FOOPROD'), None)
         self.assertEqual(rv['statusCode'], 200)
 
     def test_request_method(self):

@@ -1,4 +1,4 @@
-def fizzbuzz(number, event, context):
+def fizzbuzz(number):
     answer = []
     if number % 3 == 0:
         answer.append('fizz')
