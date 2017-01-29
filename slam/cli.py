@@ -489,12 +489,13 @@ def invoke(stage, async, dry_run, config_file, args):
             data[s[0]] = s[1]
 
     rv = lmb.invoke(FunctionName=function, InvocationType=invocation_type,
-                    Qualifier=stage, Payload=json.dumps({'kwargs': data}))
+                    Qualifier=stage,
+                    Payload=json.dumps({'kwargs': data}, sort_keys=True))
     if rv['StatusCode'] != 200 and rv['StatusCode'] != 202:
         raise RuntimeError('Unexpected error. Status code = {}.'.format(
             rv['StatusCode']))
     if invocation_type == 'RequestResponse':
-        payload = json.loads(rv['Payload'].read())
+        payload = json.loads(rv['Payload'].read().decode('utf-8'))
         if 'FunctionError' in rv:
             if 'stackTrace' in payload:
                 print('Traceback (most recent call last):')
@@ -504,6 +505,8 @@ def invoke(stage, async, dry_run, config_file, args):
                     print('    ' + frame[3])
                 print('{}: {}'.format(payload['errorType'],
                                       payload['errorMessage']))
+            else:
+                raise RuntimeError('Unknown error')
         else:
             print(str(payload))
 
