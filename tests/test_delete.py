@@ -55,6 +55,35 @@ class DeleteTests(unittest.TestCase):
 
     @mock.patch('slam.cli.boto3.client')
     @mock.patch('slam.cli._load_config', return_value=config)
+    def test_delete_no_api_gateway(self, _load_config, client):
+        mock_s3 = mock.MagicMock()
+        mock_logs = mock.MagicMock()
+        mock_cfn = mock.MagicMock()
+        mock_cfn.describe_stacks.return_value = {'Stacks': [{
+            'Parameters': [
+                {'ParameterKey': 'LambdaS3Bucket', 'ParameterValue': 'bucket'},
+                {'ParameterKey': 'LambdaS3Key',
+                 'ParameterValue': 'lambda-old.zip'},
+            ],
+            'Outputs': [
+                {'OutputKey': 'FunctionArn', 'OutputValue': 'arn:lambda:foo'},
+            ]
+        }]}
+        client.side_effect = [mock_s3, mock_cfn, mock_logs]
+
+        cli.main(['delete'])
+        mock_cfn.describe_stacks.assert_called_once_with(StackName='foo')
+        mock_cfn.delete_stack.assert_called_once_with(StackName='foo')
+        mock_cfn.get_waiter.assert_called_once_with('stack_delete_complete')
+        mock_cfn.get_waiter().wait.assert_called_once_with(StackName='foo')
+        mock_logs.delete_log_group.assert_called_once_with(
+            logGroupName='/aws/lambda/foo')
+        mock_s3.delete_object.assert_called_once_with(Bucket='bucket',
+                                                      Key='lambda-old.zip')
+        mock_s3.delete_bucket(Bucket='bucket')
+
+    @mock.patch('slam.cli.boto3.client')
+    @mock.patch('slam.cli._load_config', return_value=config)
     def test_delete_not_deployed(self, _load_config, client):
         mock_s3 = mock.MagicMock()
         mock_logs = mock.MagicMock()

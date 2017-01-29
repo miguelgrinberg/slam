@@ -537,8 +537,11 @@ def delete(no_logs, config_file):
     lambda_package = _get_from_stack(stack, 'Parameter', 'LambdaS3Key')
     function = _get_from_stack(stack, 'Output', 'FunctionArn').split(':')[-1]
     api_id = _get_from_stack(stack, 'Output', 'ApiId')
-    log_groups = ['API-Gateway-Execution-Logs_' + api_id + '/' + stage
-                  for stage in config['stage_environments'].keys()]
+    if api_id:
+        log_groups = ['API-Gateway-Execution-Logs_' + api_id + '/' + stage
+                      for stage in config['stage_environments'].keys()]
+    else:
+        log_groups = []
     log_groups.append('/aws/lambda/' + function)
 
     print('Deleting {}...'.format(config['name']))

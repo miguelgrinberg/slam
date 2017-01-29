@@ -211,7 +211,8 @@ def _get_from_stack(stack, source, key):  # pragma: no cover
 
 
 def status(config, stack):
-    if config['wsgi']['deploy_api_gateway']:
+    if _get_from_stack(stack, 'Output',
+                       config['devstage'].title() + 'Endpoint'):
         return {s: _get_from_stack(stack, 'Output', s.title() + 'Endpoint')
                 for s in config['stage_environments'].keys()}
 

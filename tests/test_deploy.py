@@ -157,10 +157,6 @@ class DeployTests(unittest.TestCase):
         mock_cfn.describe_stacks.return_value = {'Stacks': [{
             'Outputs': [
                 {'OutputKey': 'FunctionArn', 'OutputValue': 'arn:lambda:foo'},
-                {'OutputKey': 'DevEndpoint', 'OutputValue': 'https://a.com'},
-                {'OutputKey': 'ProdEndpoint', 'OutputValue': 'https://b.com'},
-                {'OutputKey': 'StagingEndpoint',
-                 'OutputValue': 'https://c.com'},
             ]
         }]}
         mock_lmb = mock.MagicMock()
