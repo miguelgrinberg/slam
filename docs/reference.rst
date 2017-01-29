@@ -253,6 +253,51 @@ Example
       prod:4: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
       staging:3: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/staging
 
+slam invoke
+===========
+
+The ``slam invoke`` command invokes the Lambda function.
+
+.. program-output:: slam invoke --help
+
+Required arguments
+------------------
+
+None.
+
+Optional arguments
+------------------
+
+- ``--stage STAGE``
+
+  The stage on which to run the function. Defaults to the development stage.
+
+- ``--async``
+
+  Invoke the function, but don't wait for it to run.
+
+- ``--dry-run``
+
+  Do not invoke the function, just check that the current user is allowed to
+  invoke it.
+
+- ``args [args ...]``
+
+  Input arguments to pass to the function. To pass a string argument, use
+  ``argument=value``. To pass a non-string argument, use ``argument:=value``,
+  where ``value`` is a number, boolean (``true`` or ``false``) or raw JSON
+  string.
+
+Example
+-------
+
+::
+
+  $ slam invoke fizzbuzz number:15
+  fizzbuzz
+  $ slam invoke fizzbuzz number:4
+  4
+
 slam template
 =============
 

@@ -443,6 +443,72 @@ def publish(version, stage, config_file):
 
 
 @main.command()
+@climax.argument('args', nargs='*',
+                 help='Input arguments for the function. Use arg=value for '
+                      'strings, or arg:=value for integer, booleans or JSON '
+                      'structures.')
+@climax.argument('--dry-run', action='store_true',
+                 help='Just check that the function can be invoked.')
+@climax.argument('--async', action='store_true',
+                 help='Invoke the function but don\'t wait for it to return.')
+@climax.argument('--stage', help='Stage of the invoked function. Defaults to '
+                                 'the development stage')
+def invoke(stage, async, dry_run, config_file, args):
+    """Invoke the lambda function."""
+    config = _load_config(config_file)
+    if stage is None:
+        stage = config['devstage']
+
+    cfn = boto3.client('cloudformation')
+    lmb = boto3.client('lambda')
+
+    try:
+        stack = cfn.describe_stacks(StackName=config['name'])['Stacks'][0]
+    except botocore.exceptions.ClientError:
+        raise RuntimeError('This project has not been deployed yet.')
+    function = _get_from_stack(stack, 'Output', 'FunctionArn')
+
+    if dry_run:
+        invocation_type = 'DryRun'
+    elif async:
+        invocation_type = 'Event'
+    else:
+        invocation_type = 'RequestResponse'
+
+    # parse input arguments
+    data = {}
+    for arg in args:
+        s = arg.split('=', 1)
+        if len(s) != 2:
+            raise ValueError('Invalid argument ' + arg)
+        if s[0][-1] == ':':
+            # JSON argument
+            data[s[0][:-1]] = json.loads(s[1])
+        else:
+            # string argument
+            data[s[0]] = s[1]
+
+    rv = lmb.invoke(FunctionName=function, InvocationType=invocation_type,
+                    Qualifier=stage, Payload=json.dumps({'kwargs': data}))
+    if rv['StatusCode'] != 200 and rv['StatusCode'] != 202:
+        raise RuntimeError('Unexpected error. Status code = {}.'.format(
+            rv['StatusCode']))
+    if invocation_type == 'RequestResponse':
+        payload = json.loads(rv['Payload'].read())
+        if 'FunctionError' in rv:
+            if 'stackTrace' in payload:
+                print('Traceback (most recent call last):')
+                for frame in payload['stackTrace']:
+                    print('  File "{}", line {}, in {}'.format(
+                        frame[0], frame[1], frame[2]))
+                    print('    ' + frame[3])
+                print('{}: {}'.format(payload['errorType'],
+                                      payload['errorMessage']))
+        else:
+            print(str(payload))
+
+
+@main.command()
 @climax.argument('--no-logs', action='store_true', help='Do not delete logs.')
 def delete(no_logs, config_file):
     """Delete the project."""
