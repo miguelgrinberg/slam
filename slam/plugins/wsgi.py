@@ -12,12 +12,6 @@ def init(config, wsgi, no_api_gateway):
     return '', {'deploy_api_gateway': not no_api_gateway,
                 'log_stages': [config['devstage']]}
 
-    # def test_outputs(self):
-    #     outputs = cfn._get_cfn_outputs(config)
-    #     for output in ['FunctionArn', 'DevEndpoint', 'StagingEndpoint',
-    #                    'ProdEndpoint']:
-    #         self.assertIn('FunctionArn', outputs)
-
 
 def _get_wsgi_resources(config):
     res = {}

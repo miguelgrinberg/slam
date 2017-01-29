@@ -5,7 +5,7 @@ import unittest
 from slam.plugins import dynamodb
 from .test_deploy import config as deploy_config
 
-config = deploy_config.copy()
+config = deepcopy(deploy_config)
 config.update({'dynamodb_tables': dynamodb.init.func(config, 't1,t2')[1]})
 
 
