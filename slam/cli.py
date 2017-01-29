@@ -234,19 +234,27 @@ def _print_status(config):
         print('{} has not been deployed yet.'.format(config['name']))
     else:
         print('{} is deployed!'.format(config['name']))
+        print('  Function name: {}'.format(
+            _get_from_stack(stack, 'Output', 'FunctionArn').split(':')[-1]))
+        print('  Stages:')
         stages = list(config['stage_environments'].keys())
         stages.sort()
+        plugin_status = {}
+        for name, plugin in plugins.items():
+            if name in config and hasattr(plugin, 'status'):
+                statuses = plugin.status(config, stack)
+                if statuses:
+                    for s, status in statuses.items():
+                        plugin_status.setdefault(s, []).append(status)
         for s in stages:
             fd = lmb.get_function(FunctionName=_get_from_stack(
                  stack, 'Output', 'FunctionArn'), Qualifier=s)
-            v = fd['Configuration']['Version']
-            if v != '$LATEST' or s == config['devstage']:
-                v = ':{}'.format(v)
+            v = ':{}'.format(fd['Configuration']['Version'])
+            if s in plugin_status and len(plugin_status[s]) > 0:
+                print('    {}{}: {}'.format(s, v,
+                                            ' '.join(plugin_status[s])))
             else:
-                v = ''
-            print('  {}{}: {}'.format(
-                s, v, _get_from_stack(stack, 'Output',
-                                      s.title() + 'Endpoint')))
+                print('    {}{}'.format(s, v))
 
 
 @main.command()

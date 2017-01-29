@@ -154,9 +154,7 @@ class InvokeTests(unittest.TestCase):
         client.side_effect = [mock_cfn, mock_lmb]
 
         cli.main(['invoke'])
-        output = ''
-        for call in mock_print.call_args_list:
-            output += call[0][0] + '\n'
+        output = ''.join([c[0][0] + '\n' for c in mock_print.call_args_list])
         self.assertEqual(output, 'Traceback (most recent call last):\n'
                                  '  File "file.py", line 123, in module\n'
                                  '    code\n'

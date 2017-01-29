@@ -199,6 +199,23 @@ def cfn_template(config, template):
     return template
 
 
+def _get_from_stack(stack, source, key):  # pragma: no cover
+    value = None
+    if source + 's' not in stack:
+        raise ValueError('Invalid stack attribute' + str(stack))
+    for p in stack[source + 's']:
+        if p[source + 'Key'] == key:
+            value = p[source + 'Value']
+            break
+    return value
+
+
+def status(config, stack):
+    if config['wsgi']['deploy_api_gateway']:
+        return {s: _get_from_stack(stack, 'Output', s.title() + 'Endpoint')
+                for s in config['stage_environments'].keys()}
+
+
 def run_lambda_function(event, context, app, config):  # pragma: no cover
     from io import BytesIO
     import sys

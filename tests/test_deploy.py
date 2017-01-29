@@ -1,3 +1,4 @@
+from copy import deepcopy
 import mock
 import sys
 import unittest
@@ -109,9 +110,75 @@ class DeployTests(unittest.TestCase):
         cli._print_status(config)
         output = ''.join([c[0][0] + '\n' for c in mock_print.call_args_list])
         self.assertEqual(output, ('foo is deployed!\n'
-                                  '  dev:$LATEST: https://a.com\n'
-                                  '  prod:23: https://b.com\n'
-                                  '  staging: https://c.com\n'))
+                                  '  Function name: foo\n'
+                                  '  Stages:\n'
+                                  '    dev:$LATEST\n'
+                                  '    prod:23\n'
+                                  '    staging:$LATEST\n'))
+
+    @mock.patch('slam.cli.boto3.client')
+    @mock.patch(BUILTIN + '.print')
+    def test_print_status_with_api_gateway(self, mock_print, client):
+        api_config = deepcopy(config)
+        api_config['wsgi'] = {'deploy_api_gateway': True}
+        mock_cfn = mock.MagicMock()
+        mock_cfn.describe_stacks.return_value = {'Stacks': [{
+            'Outputs': [
+                {'OutputKey': 'FunctionArn', 'OutputValue': 'arn:lambda:foo'},
+                {'OutputKey': 'DevEndpoint', 'OutputValue': 'https://a.com'},
+                {'OutputKey': 'ProdEndpoint', 'OutputValue': 'https://b.com'},
+                {'OutputKey': 'StagingEndpoint',
+                 'OutputValue': 'https://c.com'},
+            ]
+        }]}
+        mock_lmb = mock.MagicMock()
+        mock_lmb.get_function.side_effect = [
+            {'Configuration': {'Version': '$LATEST'}},
+            {'Configuration': {'Version': '23'}},
+            {'Configuration': {'Version': '$LATEST'}},
+        ]
+        client.side_effect = [mock_cfn, mock_lmb]
+
+        cli._print_status(api_config)
+        output = ''.join([c[0][0] + '\n' for c in mock_print.call_args_list])
+        self.assertEqual(output, ('foo is deployed!\n'
+                                  '  Function name: foo\n'
+                                  '  Stages:\n'
+                                  '    dev:$LATEST: https://a.com\n'
+                                  '    prod:23: https://b.com\n'
+                                  '    staging:$LATEST: https://c.com\n'))
+
+    @mock.patch('slam.cli.boto3.client')
+    @mock.patch(BUILTIN + '.print')
+    def test_print_status_without_api_gateway(self, mock_print, client):
+        api_config = deepcopy(config)
+        api_config['wsgi'] = {'deploy_api_gateway': False}
+        mock_cfn = mock.MagicMock()
+        mock_cfn.describe_stacks.return_value = {'Stacks': [{
+            'Outputs': [
+                {'OutputKey': 'FunctionArn', 'OutputValue': 'arn:lambda:foo'},
+                {'OutputKey': 'DevEndpoint', 'OutputValue': 'https://a.com'},
+                {'OutputKey': 'ProdEndpoint', 'OutputValue': 'https://b.com'},
+                {'OutputKey': 'StagingEndpoint',
+                 'OutputValue': 'https://c.com'},
+            ]
+        }]}
+        mock_lmb = mock.MagicMock()
+        mock_lmb.get_function.side_effect = [
+            {'Configuration': {'Version': '$LATEST'}},
+            {'Configuration': {'Version': '23'}},
+            {'Configuration': {'Version': '$LATEST'}},
+        ]
+        client.side_effect = [mock_cfn, mock_lmb]
+
+        cli._print_status(api_config)
+        output = ''.join([c[0][0] + '\n' for c in mock_print.call_args_list])
+        self.assertEqual(output, ('foo is deployed!\n'
+                                  '  Function name: foo\n'
+                                  '  Stages:\n'
+                                  '    dev:$LATEST\n'
+                                  '    prod:23\n'
+                                  '    staging:$LATEST\n'))
 
     @mock.patch('slam.cli.boto3.client')
     @mock.patch(BUILTIN + '.print')
