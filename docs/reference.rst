@@ -84,12 +84,15 @@ Optional arguments
   these tables are created, they will be named using the format
   ``<stage>.<table_name>``, so that each stage has a unique table name.
 
-Example
--------
+Examples
+--------
 
 ::
 
-    $ slam init simple_api:app --stages dev,staging,prod --dynamodb-tables users,tasks
+    $ slam init fizzbuzz:fizzbuzz --stages dev,prod
+    The configuration file for your project has been generated. Remember to add slam.yaml to source control.
+
+    $ slam init tasks_api:app --wsgi --stages dev,staging,prod --dynamodb-tables users,tasks
     The configuration file for your project has been generated. Remember to add slam.yaml to source control.
 
 slam build
@@ -173,9 +176,11 @@ Example
     Building lambda package...
     Deploying simple-api...
     simple-api is deployed!
-      dev: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
-      prod: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
-      staging: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/staging
+      Function name: simple-api-Function-1XARPP7W4H3KR
+      Stages:
+        dev:$LATEST: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
+        prod:31: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
+        staging:30: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/staging
 
 slam publish
 ============
@@ -211,18 +216,22 @@ Assuming a project that has three stages named ``dev``, ``staging`` and
     $ slam publish staging
     Publishing simple-api:dev to staging...
     simple-api is deployed!
-      dev: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
-      prod: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
-      staging:1: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/staging
+      Function name: simple-api-Function-1XARPP7W4H3KR
+      Stages:
+        dev:$LATEST: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
+        prod:1: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
+        staging:2: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/staging
 
 Later a version running on staging can be published to ``prod`` with::
 
     $ slam publish prod --version staging
     Publishing simple-api:staging to prod...
     simple-api is deployed!
-      dev: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
-      prod:1: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
-      staging:1: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/staging
+      Function name: simple-api-Function-1XARPP7W4H3KR
+      Stages:
+        dev:$LATEST: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
+        prod:2: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
+        staging:2: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/staging
 
 slam status
 ===========
@@ -249,9 +258,11 @@ Example
 
     $ slam status
     simple-api is deployed!
-      dev: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
-      prod:4: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
-      staging:3: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/staging
+      Function name: simple-api-Function-1XARPP7W4H3KR
+      Stages:
+        dev:$LATEST: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
+        prod:4: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
+        staging:3: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/staging
 
 slam invoke
 ===========
@@ -293,10 +304,11 @@ Example
 
 ::
 
-  $ slam invoke fizzbuzz number:15
+  $ slam invoke number:15
   fizzbuzz
-  $ slam invoke fizzbuzz number:4
-  4
+
+  $ slam invoke name=john age:=34
+  OK
 
 slam template
 =============

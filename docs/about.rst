@@ -40,31 +40,31 @@ file, containing your application plus all its dependencies. You have to
 designate a function in your code as the entry point, and this function will be
 called by AWS when the Lambda function is invoked.
 
-Adapting a web application to run on the Lambda service requires some careful.
-design. Because Lambda functions are supposed to be short lived, and are not
-running constantly like a normal web server, there are some types of
-applications that are not a good match for this service. In particular, any
-applications that rely on the server maintaining a long connection with the
-client will not work well. Examples of these applications are those that return
-live information as a stream, or those that use long-polling or WebSocket to
-provide constant updates to the client.
+Because Lambda functions are supposed to be short lived, and are not
+running constantly like a web server, there are some types of applications that
+are not a good match for this service. In particular, any applications that rely
+on a server maintaining a long lived connection with the client will not work
+well. Examples of these applications are those that return live information as a
+stream, or those that use long-polling or WebSocket to provide constant updates
+to the client.
 
-Web applications expose their functionality as one or more HTTP services, so
-they cannot directly work on the Lambda platform, since they rely servers that
-need to be running constantly to receive client requests. The Amazon
-`API Gateway <https://aws.amazon.com/api-gateway>`_ service bridges this gap, by
-allowing you to construct API endpoints, and configure what actions these
-endpoints trigger when the client sends a request to them. The service takes
-care of scaling, rate limiting, and even authentication if you want to offload
-that to the cloud too. Among the available actions you can associate with an API
-Gateway endpoint, there is invoking a Lambda function.
+Deploying a web application to AWS Lambda also has its challenges. Web
+applications expose their functionality as one or more HTTP services, so they
+cannot directly work on the Lambda platform, since they rely servers that need
+to be running constantly to receive client requests. The Amazon `API Gateway
+<https://aws.amazon.com/api-gateway>`_ service bridges this gap, by allowing you
+to construct API endpoints, and configure what actions these endpoints trigger
+when the client sends a request to them. The service takes care of scaling, rate
+limiting, and even authentication if you want to offload that to the cloud too.
+Among the available actions you can associate with an API Gateway endpoint,
+there is invoking a Lambda function.
 
 As you can probably guess, creating a web application on AWS Lambda and API
 Gateway is substantially different than what Python web developers are used to
 when creating their projects using Flask, Django or other web frameworks. The
 goal of Slam is to allow you to continue developing your web applications in the
 way you are used to, by automatically making your project compatible with the
-AWS serverless offering.
+AWS serverless paradigm.
 
 How does Slam work?
 ===================
@@ -75,26 +75,29 @@ continue to develop your application locally, and deploy it to AWS with a single
 command that takes care of the transformation required for the project to run
 in the serverless environment.
 
-Slam takes advantage of the wide support WSGI has in Python web applications, by
-converting HTTP requests and responses between the API Gateway and WSGI formats.
-When a request is received by API Gateway and passed on to the Lambda function,
-this request is converted to the WSGI format and used to invoke your
-application, which is exactly what a web server such as gunicorn or uWSGI do.
-The WSGI response from the application is then converted back to the API Gateway
+For regular Python functions, Slam does very little besides creating a
+self-contained package with your code and all of its dependencies. But for web
+applications, Slam converts HTTP requests and responses between the API Gateway
+and WSGI formats. When a request is received by API Gateway and passed on to the
+Lambda function, this request is converted to the WSGI format and given to your
+application, which is exactly what web servers such as gunicorn or uWSGI do. The
+WSGI response from the application is then converted back to the API Gateway
 format, before the Lambda function ends. Slam does all these conversions for
-you, so that your application does not need to be changed at all.
+you, so your application does not need to be changed at all.
 
 One of the nicest features of Slam is how it creates neat and tidy deployments
 that are a pleasure to manage. For this, it relies on
 `Cloudformation <https://aws.amazon.com/cloudformation>`_, the AWS
 orchestration service. Slam uses the project configuration to generate a
 Cloudformation template, and then runs this template to make changes on your
-cloud account. The end result is that every single resource that is allocated
+AWS account. The end result is that every single resource that is allocated
 for your deployment is owned by the Cloudformation template, making it easy to
-keep track of what resources are in use. And if you find the need to create a
-custom deployment that differs from the standard structure used by Slam, it is
-possible to write plugins that extend Slam's Cloudformation template to suit
-different needs.
+keep track of what resources are in use.
+
+If you ever find the need to create a custom deployment that differs from the
+standard structure used by Slam, it is possible to create plugins that extend
+Slam's Cloudformation template to suit different needs. In fact, a good part of
+the functionality offered by Slam native is written as plugins.
 
 Alternatives to Slam
 ====================
@@ -105,11 +108,12 @@ these may be good alternatives to research.
 
 `Chalice <https://github.com/awslabs/chalice>`_ is an open-source framework from
 AWS that uses a decorator-based syntax similar to Flask and Bottle to create
-API Gateway and Lambda projects. The main disadvantage of Chalice against Slam
-is that it is not built on top of WSGI, so a project based on this framework
-can only be run on AWS.
+API Gateway and Lambda projects. The main disadvantage of Chalice compared to
+Slam is that it is not built on top of WSGI, so a project based on this
+framework cannot be run locally like you would with a standard WSGI application.
 
-`Zappa <https://www.zappa.io/>`_ is another open-source framework that is
-more mature than Slam, but overall similar. The main difference with Slam is
-that it invokes AWS APIs directly during a deployment, instead of using
+`Zappa <https://www.zappa.io/>`_ is another open-source framework that deploys
+Python functions and APIs to AWS Lambda and API Gateway. It is more mature than
+Slam, but overall similar. The main difference with Slam is that it invokes a
+variety of AWS APIs directly during a deployment, instead of using
 Cloudformation to orchestrate the deployment.
