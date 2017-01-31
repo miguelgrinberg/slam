@@ -38,3 +38,4 @@ aws:
 
   # memory in MB for the lambda function
   lambda_memory: {{memory}}
+

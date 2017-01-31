@@ -1,34 +1,38 @@
-import climax
+"""DynamoDB Plugin
 
-config_header = '''# example of a simple table:
-# mytable:
-#   attributes:
-#     id: "S"
-#   key: "id"
-#   read_throughput: 1
-#   write_throughput: 1
-#
-# a more complex example:
-# mytable2:
-#   attributes:
-#     id: "S"
-#     name: "S"
-#     age: "N"
-#   key: ["id", "name"]
-#   read_throughput: 1
-#   write_throughput: 1
-#   local_secondary_indexes:
-#     myindex:
-#       key: ["id", "age"]
-#       project:
-#         - "name"
-#   global_secondary_indexes:
-#     myindex2:
-#       key: ["age", "name"]
-#       project: "all"
-#       read_throughput: 1
-#       write_throughput: 1
-'''
+This plugin provisions DynamoDB tables for each stage.
+
+dynamodb_tables:
+  # a simple table with a single id key:
+  mytable:
+    attributes:
+      id: "S"
+    key: "id"
+    read_throughput: 1
+    write_throughput: 1
+
+  # a more complex example:
+  mytable2:
+   attributes:
+     id: "S"
+     name: "S"
+     age: "N"
+   key: ["id", "name"]
+   read_throughput: 1
+   write_throughput: 1
+   local_secondary_indexes:
+     myindex:
+       key: ["id", "age"]
+       project:
+         - "name"
+   global_secondary_indexes:
+     myindex2:
+       key: ["age", "name"]
+       project: "all"
+       read_throughput: 1
+       write_throughput: 1
+"""
+import climax
 
 
 @climax.command()
@@ -48,7 +52,7 @@ def init(config, dynamodb_tables):
             'read_throughput': 1,
             'write_throughput': 1
         }
-    return config_header, table_config
+    return table_config
 
 
 def _get_dynamodb_policies(config):

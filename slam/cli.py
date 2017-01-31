@@ -96,15 +96,16 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
     # plugins
     config = _load_config(config_file)
     for name, plugin in plugins.items():
+        # write plugin documentation as a comment in config file
+        with open(config_file, 'at') as f:
+            f.write('\n\n# ' + (plugin.__doc__ or name).replace(
+                '\n', '\n# ') + '\n')
         if hasattr(plugin, 'init'):
             arguments = {k: v for k, v in kwargs.items()
                          if k in getattr(plugin.init, '_argnames', [])}
-            p = plugin.init.func(config=config, **arguments)
-            if p:
-                header, plugin_config = p
+            plugin_config = plugin.init.func(config=config, **arguments)
+            if plugin_config:
                 with open(config_file, 'at') as f:
-                    f.write('\n\n# {} plugin configuration\n'.format(name))
-                    f.write(header)
                     yaml.dump({name: plugin_config}, f,
                               default_flow_style=False)
 

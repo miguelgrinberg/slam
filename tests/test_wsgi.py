@@ -6,13 +6,13 @@ from slam.plugins import wsgi
 from .test_deploy import config as deploy_config
 
 config = deepcopy(deploy_config)
-config.update({'wsgi': wsgi.init.func(config, True, False)[1]})
+config.update({'wsgi': wsgi.init.func(config, True, False)})
 
 
 class WSGITests(unittest.TestCase):
     def test_init(self):
-        header, plugin_config = wsgi.init.func(config=deploy_config, wsgi=True,
-                                               no_api_gateway=False)
+        plugin_config = wsgi.init.func(config=deploy_config, wsgi=True,
+                                       no_api_gateway=False)
         self.assertEqual(plugin_config['deploy_api_gateway'], True)
         self.assertEqual(plugin_config['log_stages'], ['dev'])
 

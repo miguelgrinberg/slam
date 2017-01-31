@@ -1,3 +1,4 @@
+from io import BytesIO
 import mock
 import os
 import unittest
@@ -33,13 +34,14 @@ class PluginTests(unittest.TestCase):
         @climax.command()
         @climax.argument('--foo-option')
         def plugin_init(config, foo_option):
-            return '# test plugin\n', {'x': 'y'}
+            return {'x': 'y'}
 
         def plugin_cfn_template(config, template):
             template['Resources']['foo'] = config['foo']
             return template
 
         plugin_module = mock.MagicMock(spec='init')
+        plugin_module.__doc__ = 'test plugin\n'
         plugin_module.init = plugin_init
         plugin_module.cfn_template = plugin_cfn_template
         plugin = mock.MagicMock()
@@ -57,7 +59,10 @@ class PluginTests(unittest.TestCase):
 
         cli.main(['init', '--foo-option', 'abc', 'app_module:app'])
         with open('slam.yaml') as f:
-            cfg = yaml.load(f)
+            cfg = f.read()
+        self.assertIn('# test plugin\n# \nfoo:\n  x: y\n', cfg)
+
+        cfg = yaml.load(BytesIO(cfg.encode('utf-8')))
         self.assertEqual(cfg['foo'], {'x': 'y'})
 
         tpl = cfn.get_cfn_template(cfg)

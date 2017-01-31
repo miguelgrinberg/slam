@@ -6,13 +6,13 @@ from slam.plugins import dynamodb
 from .test_deploy import config as deploy_config
 
 config = deepcopy(deploy_config)
-config.update({'dynamodb_tables': dynamodb.init.func(config, 't1,t2')[1]})
+config.update({'dynamodb_tables': dynamodb.init.func(config, 't1,t2')})
 
 
 class DynamoDBTests(unittest.TestCase):
     def test_init(self):
-        header, plugin_config = dynamodb.init.func(config=deploy_config,
-                                                   dynamodb_tables='a,b ,c, d')
+        plugin_config = dynamodb.init.func(config=deploy_config,
+                                           dynamodb_tables='a,b ,c, d')
         for table in ['a', 'b', 'c', 'd']:
             self.assertIn(table, plugin_config)
             self.assertEqual(plugin_config[table], {

@@ -1,3 +1,13 @@
+"""WSGI Plugin
+
+This plugin implements an adapter that enables a WSGI complaint web application
+to be deployed to AWS Lambda and API Gateway.
+
+wsgi:
+  deploy_api_gateway: true
+  log_stages:
+    - dev
+"""
 import climax
 
 
@@ -9,8 +19,8 @@ import climax
 def init(config, wsgi, no_api_gateway):
     if not wsgi:
         return
-    return '', {'deploy_api_gateway': not no_api_gateway,
-                'log_stages': [config['devstage']]}
+    return {'deploy_api_gateway': not no_api_gateway,
+            'log_stages': [config['devstage']]}
 
 
 def _get_wsgi_resources(config):
