@@ -332,11 +332,12 @@ def deploy(stage, lambda_package, no_lambda, rebuild_deps, config_file):
     stages.sort()
     for s in stages:
         param = s.title() + 'Version'
-        v = None
         if s != stage:
             v = _get_from_stack(previous_deployment, 'Parameter', param) \
                 if previous_deployment else '$LATEST'
-        v = v or '$LATEST'
+            v = v or '$LATEST'
+        else:
+            v = '$LATEST'
         parameters.append({'ParameterKey': param, 'ParameterValue': v})
 
     # run the cloudformation template
@@ -383,7 +384,7 @@ def publish(version, stage, config_file):
     config = _load_config(config_file)
     cfn = boto3.client('cloudformation')
 
-    if version is None or version == '$LATEST':
+    if version is None:
         version = config['devstage']
     elif version not in config['stage_environments'].keys() and \
             not version.isdigit():
@@ -422,16 +423,17 @@ def publish(version, stage, config_file):
         else:
             if version.isdigit():
                 # explicit version number
-                v = str(version)
-            elif version == config['devstage']:
-                # publish a new version from $LATEST, and assign it to stage
-                lmb = boto3.client('lambda')
-                v = lmb.publish_version(FunctionName=_get_from_stack(
-                    previous_deployment, 'Output', 'FunctionArn'))['Version']
+                v = version
             else:
-                # publish version from a stage other than the devstage
+                # publish version from a stage
                 v = _get_from_stack(previous_deployment, 'Parameter',
                                     version.title() + 'Version')
+                if v == '$LATEST':
+                    # publish a new version from $LATEST
+                    lmb = boto3.client('lambda')
+                    v = lmb.publish_version(FunctionName=_get_from_stack(
+                        previous_deployment, 'Output', 'FunctionArn'))[
+                            'Version']
         parameters.append({'ParameterKey': param, 'ParameterValue': v})
 
     # run the cloudformation template
