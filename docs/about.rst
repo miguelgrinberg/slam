@@ -15,8 +15,8 @@ login to it and install your software, exactly like you would on a local server.
 In AWS, this is the `Elastic Compute Cloud (EC2) <https://aws.amazon.com/ec2>`_
 service.
 
-While being able to work on virtual servers is nice, the tendency is, however,
-to move towards a model in which developers only need to concentrate on their
+Being able to work on virtual servers is nice, but the tendency is, however, to
+move towards a model in which developers only need to concentrate on their
 applications, leaving most or all of the installation and administration tasks
 to the cloud operator. This is what serverless computing is about.
 
@@ -97,7 +97,7 @@ keep track of what resources are in use.
 If you ever find the need to create a custom deployment that differs from the
 standard structure used by Slam, it is possible to create plugins that extend
 Slam's Cloudformation template to suit different needs. In fact, a good part of
-the functionality offered by Slam native is written as plugins.
+the functionality offered by Slam natively is written as plugins.
 
 Alternatives to Slam
 ====================
