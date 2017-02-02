@@ -88,5 +88,15 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# Mac OS X
+.DS_Store
+
+# slam temporary folder
+.slam
+
 # temp file generated during unit tests
 slam/_handler.py
+
+# slam examples
+examples/**/slam.yaml
+eamples/**/*.zip
