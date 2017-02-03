@@ -1,8 +1,9 @@
 import inspect
-import mock
 import os
 import re
 import unittest
+
+import mock
 
 from slam import cli
 
@@ -46,7 +47,7 @@ class BuildTests(unittest.TestCase):
         if saved_venv:
             os.environ['VIRTUAL_ENV'] = saved_venv
         self.assertIsNotNone(re.match('^lambda_package\\.[0-9]*_[0-9]*\\.zip',
-                             pkg))
+                                      pkg))
         mkdir.assert_called_once_with('.slam')
         _generate_lambda_handler.assert_called_once_with(self.config)
         _run_command.asssert_any_call('virtualenv .slam/venv')
@@ -55,7 +56,7 @@ class BuildTests(unittest.TestCase):
         build_package.assert_called_once_with(
             '.', 'requirements.txt', virtualenv='.slam/venv',
             extra_files=['.slam/handler.py'],
-            ignore=['\.slam\/venv\/.*$', '\.pyc$'], zipfile_name=pkg)
+            ignore=[r'\.slam\/venv\/.*$', r'\.pyc$'], zipfile_name=pkg)
         rmtree.assert_called_once_with('.lambda_uploader_temp')
 
     @mock.patch('slam.cli.os.path.exists', side_effect=[False, False, True])
@@ -79,8 +80,8 @@ class BuildTests(unittest.TestCase):
         build_package.assert_called_once_with(
             '.', 'requirements.txt', virtualenv='.slam/venv',
             extra_files=['.slam/handler.py'],
-            ignore=['\.slam\/venv\/.*$', '\.pyc$',
-                    'tests\/venv\/.*$'],
+            ignore=[r'\.slam\/venv\/.*$', r'\.pyc$',
+                    r'tests\/venv\/.*$'],
             zipfile_name=pkg)
 
     @mock.patch('slam.cli.os.path.exists', side_effect=[False, False, True])
@@ -104,7 +105,7 @@ class BuildTests(unittest.TestCase):
         build_package.assert_called_once_with(
             '.', 'requirements.txt', virtualenv='.slam/venv',
             extra_files=['.slam/handler.py'],
-            ignore=['\.slam\/venv\/.*$', '\.pyc$'], zipfile_name=pkg)
+            ignore=[r'\.slam\/venv\/.*$', r'\.pyc$'], zipfile_name=pkg)
 
     @mock.patch('slam.cli.os.path.exists', side_effect=[True, False, True])
     @mock.patch('slam.cli.os.mkdir')

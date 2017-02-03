@@ -8,6 +8,8 @@ wsgi:
   log_stages:
     - dev
 """
+import collections
+
 import climax
 
 
@@ -24,91 +26,75 @@ def init(config, wsgi, no_api_gateway):
 
 
 def _get_wsgi_resources(config):
-    res = {}
-    res['API'] = {
+    res = collections.OrderedDict()
+    res['Api'] = {
         'Type': 'AWS::ApiGateway::RestApi',
         'Properties': {
-            'Body': {
-                'swagger': '2.0',
-                'info': {
-                    'title': config['name'],
-                    'description': config.get('description', '')
-                },
-                'schemes': ['https'],
-                'paths': {
-                    '/': {
-                        'x-amazon-apigateway-any-method': {
-                            'responses': {},
-                            'x-amazon-apigateway-integration': {
-                                'responses': {
-                                    'default': {
-                                        'statusCode': '200'
-                                    }
-                                },
-                                'uri': {
-                                    'Fn::Join': [
-                                        '',
-                                        [
-                                            'arn:aws:apigateway:',
-                                            {'Ref': 'AWS::Region'},
-                                            (':lambda:path/2015-03-31/'
-                                             'functions/'),
-                                            {'Fn::GetAtt': ['Function',
-                                                            'Arn']},
-                                            (':${stageVariables.STAGE}/'
-                                             'invocations')
-                                        ]
-                                    ]
-                                },
-                                'passthroughBehavior': 'when_no_match',
-                                'httpMethod': 'POST',
-                                'type': 'aws_proxy'
-                            }
-                        }
-                    },
-                    '/{proxy+}': {
-                        'x-amazon-apigateway-any-method': {
-                            'parameters': [
-                                {
-                                    'name': 'proxy',
-                                    'in': 'path',
-                                    'required': True,
-                                    'type': 'string'
-                                }
-                            ],
-                            'responses': {},
-                            'x-amazon-apigateway-integration': {
-                                'responses': {
-                                    'default': {
-                                        'statusCode': '200'
-                                    }
-                                },
-                                'uri': {
-                                    'Fn::Join': [
-                                        '',
-                                        [
-                                            'arn:aws:apigateway:',
-                                            {'Ref': 'AWS::Region'},
-                                            (':lambda:path/2015-03-31/'
-                                             'functions/'),
-                                            {'Fn::GetAtt': ['Function',
-                                                            'Arn']},
-                                            (':${stageVariables.STAGE}/'
-                                             'invocations')
-                                        ]
-                                    ]
-                                },
-                                'passthroughBehavior': 'when_no_match',
-                                'httpMethod': 'POST',
-                                'type': 'aws_proxy'
-                            }
-                        }
-                    }
+            'Name': config['name'],
+            'Description': config['description'],
+        }
+    }
+    res['ApiRootMethod'] = {
+        'Type': 'AWS::ApiGateway::Method',
+        'Properties': {
+            'RestApiId': {'Ref': 'Api'},
+            'ResourceId': {'Fn::GetAtt': ['Api', 'RootResourceId']},
+            'HttpMethod': 'ANY',
+            'ApiKeyRequired': False,
+            'AuthorizationType': 'NONE',
+            'Integration': {
+                'Type': 'AWS_PROXY',
+                'IntegrationHttpMethod': 'POST',
+                'Uri': {
+                    'Fn::Join': [
+                        '',
+                        [
+                            'arn:aws:apigateway:',
+                            {'Ref': 'AWS::Region'},
+                            (':lambda:path/2015-03-31/functions/'),
+                            {'Fn::GetAtt': ['Function', 'Arn']},
+                            (':${stageVariables.STAGE}/invocations')
+                        ]
+                    ]
                 }
             }
         }
     }
-    res['APICloudWatchRole'] = {
+    res['ApiResource'] = {
+        'Type': 'AWS::ApiGateway::Resource',
+        'Properties': {
+            'RestApiId': {'Ref': 'Api'},
+            'ParentId': {'Fn::GetAtt': ['Api', 'RootResourceId']},
+            'PathPart': '{proxy+}'
+        }
+    }
+    res['ApiMethod'] = {
+        'Type': 'AWS::ApiGateway::Method',
+        'Properties': {
+            'RestApiId': {'Ref': 'Api'},
+            'ResourceId': {'Ref': 'ApiResource'},
+            'HttpMethod': 'ANY',
+            'ApiKeyRequired': False,
+            'AuthorizationType': 'NONE',
+            'Integration': {
+                'Type': 'AWS_PROXY',
+                'IntegrationHttpMethod': 'POST',
+                'Uri': {
+                    'Fn::Join': [
+                        '',
+                        [
+                            'arn:aws:apigateway:',
+                            {'Ref': 'AWS::Region'},
+                            (':lambda:path/2015-03-31/functions/'),
+                            {'Fn::GetAtt': ['Function', 'Arn']},
+                            (':${stageVariables.STAGE}/invocations')
+                        ]
+                    ]
+                }
+            }
+        }
+    }
+    res['ApiCloudWatchRole'] = {
         'Type': 'AWS::IAM::Role',
         'Properties': {
             'AssumeRolePolicyDocument': {
@@ -128,21 +114,22 @@ def _get_wsgi_resources(config):
                                   'AmazonAPIGatewayPushToCloudWatchLogs']
         }
     }
-    res['APIAccount'] = {
+    res['ApiAccount'] = {
         'Type': 'AWS::ApiGateway::Account',
-        'DependsOn': 'API',
+        'DependsOn': 'Api',
         'Properties': {
             'CloudWatchRoleArn': {
-                'Fn::GetAtt': ['APICloudWatchRole', 'Arn']
+                'Fn::GetAtt': ['ApiCloudWatchRole', 'Arn']
             }
         }
     }
     for stage in config['stage_environments'].keys():
-        log = stage in (config['wsgi'].get('log_stages') or [])
-        res[stage.title() + 'APIDeployment'] = {
+        log = stage in config['wsgi'].get('log_stages') or []
+        res[stage.title() + 'ApiDeployment'] = {
             'Type': 'AWS::ApiGateway::Deployment',
+            'DependsOn': ['ApiRootMethod', 'ApiMethod'],
             'Properties': {
-                'RestApiId': {'Ref': 'API'},
+                'RestApiId': {'Ref': 'Api'},
                 'StageName': stage,
                 'StageDescription': {
                     'MethodSettings': [
@@ -156,7 +143,7 @@ def _get_wsgi_resources(config):
                 }
             }
         }
-        res[stage.title() + 'APILambdaPermission'] = {
+        res[stage.title() + 'ApiLambdaPermission'] = {
             'Type': 'AWS::Lambda::Permission',
             'DependsOn': stage.title() + 'FunctionAlias',
             'Properties': {
@@ -172,7 +159,7 @@ def _get_wsgi_resources(config):
                             ':',
                             {'Ref': 'AWS::AccountId'},
                             ':',
-                            {'Ref': 'API'},
+                            {'Ref': 'Api'},
                             '/*/*/*'
                         ]
                     ]
@@ -183,7 +170,7 @@ def _get_wsgi_resources(config):
 
 
 def _get_wsgi_outputs(config):
-    outputs = {'ApiId': {'Value': {'Ref': 'API'}}}
+    outputs = {'ApiId': {'Value': {'Ref': 'Api'}}}
     for stage in config['stage_environments'].keys():
         outputs[stage.title() + 'Endpoint'] = {
             'Value': {
@@ -191,7 +178,7 @@ def _get_wsgi_outputs(config):
                     '',
                     [
                         'https://',
-                        {'Ref': 'API'},
+                        {'Ref': 'Api'},
                         '.execute-api.',
                         {'Ref': 'AWS::Region'},
                         '.amazonaws.com/' + stage

@@ -18,23 +18,23 @@ class WSGITests(unittest.TestCase):
 
     def test_wsgi_resources(self):
         res = wsgi._get_wsgi_resources(config)
-        self.assertIn('API', res)
-        self.assertIn('APICloudWatchRole', res)
-        self.assertIn('APIAccount', res)
-        self.assertIn('DevAPIDeployment', res)
-        self.assertIn('StagingAPIDeployment', res)
-        self.assertIn('ProdAPIDeployment', res)
-        self.assertIn('DevAPILambdaPermission', res)
-        self.assertIn('StagingAPILambdaPermission', res)
-        self.assertIn('ProdAPILambdaPermission', res)
+        self.assertIn('Api', res)
+        self.assertIn('ApiCloudWatchRole', res)
+        self.assertIn('ApiAccount', res)
+        self.assertIn('DevApiDeployment', res)
+        self.assertIn('StagingApiDeployment', res)
+        self.assertIn('ProdApiDeployment', res)
+        self.assertIn('DevApiLambdaPermission', res)
+        self.assertIn('StagingApiLambdaPermission', res)
+        self.assertIn('ProdApiLambdaPermission', res)
         self.assertEqual(
-            res['DevAPIDeployment']['Properties']['StageDescription']
+            res['DevApiDeployment']['Properties']['StageDescription']
             ['MethodSettings'][0]['LoggingLevel'], 'INFO')
         self.assertEqual(
-            res['StagingAPIDeployment']['Properties']['StageDescription']
+            res['StagingApiDeployment']['Properties']['StageDescription']
             ['MethodSettings'][0]['LoggingLevel'], 'ERROR')
         self.assertEqual(
-            res['ProdAPIDeployment']['Properties']['StageDescription']
+            res['ProdApiDeployment']['Properties']['StageDescription']
             ['MethodSettings'][0]['LoggingLevel'], 'ERROR')
 
     def test_wsgi_outputs(self):
