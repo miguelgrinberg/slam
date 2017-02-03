@@ -88,11 +88,16 @@ ENV/
 # Rope project settings
 .ropeproject
 
+# Visual Studio Code settings
+.vscode
+tags
+
 # Mac OS X
 .DS_Store
 
-# slam temporary folder
+# slam temporary folders and files
 .slam
+slam_error.log
 
 # temp file generated during unit tests
 slam/_handler.py

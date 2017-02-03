@@ -26,7 +26,7 @@ from . import plugins
 from .cfn import get_cfn_template
 from .helpers import render_template
 
-merry = Merry(logger_name='slam', debug=os.environ.get('TEST', ''))
+merry = Merry(logger_name='slam', debug='unittest' in sys.modules)
 f = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 h = logging.FileHandler('slam_error.log')
 h.setFormatter(f)

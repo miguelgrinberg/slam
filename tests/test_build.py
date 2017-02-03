@@ -42,7 +42,8 @@ class BuildTests(unittest.TestCase):
     def test_build(self, rmtree, build_package, _run_command,
                    _generate_lambda_handler, mkdir, exists):
         saved_venv = os.environ.get('VIRTUAL_ENV')
-        del os.environ['VIRTUAL_ENV']
+        if 'VIRTUAL_ENV' in os.environ:
+            del os.environ['VIRTUAL_ENV']
         pkg = cli._build(self.config)
         if saved_venv:
             os.environ['VIRTUAL_ENV'] = saved_venv
