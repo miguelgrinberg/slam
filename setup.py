@@ -26,6 +26,7 @@ setup(
         'lambda_uploader',
         'boto3',
         'climax',
+        'merry',
         'jinja2',
         'pyyaml',
         'virtualenv'

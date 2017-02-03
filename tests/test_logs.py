@@ -238,7 +238,6 @@ class LogsTests(unittest.TestCase):
             logGroupName='/aws/lambda/foo', startTime=990051, interleaved=True)
         self.assertEqual(mock_sleep.call_count, 2)
         mock_sleep.assert_any_call(5)
-        self.assertEqual(mock_print.call_count, 4)
         self.assertIn(' foo', mock_print.call_args_list[0][0][0])
         self.assertIn(' bar', mock_print.call_args_list[1][0][0])
         self.assertIn(' api', mock_print.call_args_list[2][0][0])

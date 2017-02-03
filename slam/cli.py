@@ -3,6 +3,7 @@ from __future__ import print_function
 from datetime import datetime
 import inspect
 import json
+import logging
 import os
 try:
     import pkg_resources
@@ -11,24 +12,58 @@ except ImportError:  # pragma: no cover
 import re
 import subprocess
 import shutil
+import sys
 import time
 
 import boto3
 import botocore
 import climax
 from lambda_uploader.package import build_package
+from merry import Merry
 import yaml
 
 from . import plugins
 from .cfn import get_cfn_template
 from .helpers import render_template
 
+merry = Merry(logger_name='slam', debug=os.environ.get('TEST', ''))
+f = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+h = logging.FileHandler('slam_error.log')
+h.setFormatter(f)
+merry.logger.addHandler(h)
 
+
+@merry._try
 @climax.group()
 @climax.argument('--config-file', '-c', default='slam.yaml',
                  help='The slam configuration file. Defaults to slam.yaml.')
 def main(config_file):
     return {'config_file': config_file}
+
+
+@merry._except(RuntimeError, ValueError)
+def on_error(e):  # pragma: no cover
+    """Error handler
+
+    RuntimeError or ValueError exceptions raised by commands will be handled
+    by this function.
+    """
+    exname = {'RuntimeError': 'Runtime error', 'Value Error': 'Value error'}
+    sys.stderr.write('{}: {}\n'.format(exname[e.__class__.__name__], str(e)))
+    sys.stderr.write('See file slam_error.log for additional details.\n')
+    sys.exit(1)
+
+
+@merry._except(Exception)
+def on_unexpected_error(e):  # pragma: no cover
+    """Catch-all error handler
+
+    Unexpected errors will be handled by this function.
+    """
+    sys.stderr.write('Unexpected error: {} ({})\n'.format(
+        str(e), e.__class__.__name__))
+    sys.stderr.write('See file slam_error.log for additional details.\n')
+    sys.exit(1)
 
 
 def _load_config(config_file='slam.yaml'):
@@ -42,8 +77,6 @@ def _load_config(config_file='slam.yaml'):
 
 
 @main.command()
-# @climax.argument('--dynamodb-tables',
-#                  help='Comma-separated list of table names.')
 @climax.argument('--requirements', default='requirements.txt',
                  help='The location of the project\'s requirements file.')
 @climax.argument('--stages', default='dev',
