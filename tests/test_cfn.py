@@ -14,10 +14,12 @@ class CloudformationTests(unittest.TestCase):
             self.assertIn(param, params)
 
     def test_resources(self):
-        resources = cfn._get_cfn_resources(config)
+        cfg = deepcopy(config)
+        cfg['aws']['cfn_resources'] = {'foo': 'bar'}
+        resources = cfn._get_cfn_resources(cfg)
         for resource in ['FunctionExecutionRole', 'Function',
                          'DevFunctionAlias', 'StagingFunctionAlias',
-                         'ProdFunctionAlias']:
+                         'ProdFunctionAlias', 'foo']:
             self.assertIn(resource, resources)
         self.assertEqual(resources['Function']['Properties']['Timeout'], 7)
         self.assertEqual(resources['Function']['Properties']['MemorySize'],
@@ -32,6 +34,7 @@ class CloudformationTests(unittest.TestCase):
         self.assertEqual(
             resources['ProdFunctionAlias']['Properties']['FunctionVersion'],
             {'Ref': 'ProdVersion'})
+        self.assertEqual(resources['foo'], 'bar')
 
     def test_resources_vpc(self):
         vpc_config = deepcopy(config)
@@ -66,9 +69,12 @@ class CloudformationTests(unittest.TestCase):
             [{'foo': 'bar'}])
 
     def test_outputs(self):
-        outputs = cfn._get_cfn_outputs(config)
-        for output in ['FunctionArn']:
+        cfg = deepcopy(config)
+        cfg['aws']['cfn_outputs'] = {'foo': 'bar'}
+        outputs = cfn._get_cfn_outputs(cfg)
+        for output in ['FunctionArn', 'foo']:
             self.assertIn(output, outputs)
+        self.assertEqual(outputs['foo'], 'bar')
 
     @mock.patch('slam.cfn._get_cfn_outputs', return_value='baz')
     @mock.patch('slam.cfn._get_cfn_resources', return_value='bar')

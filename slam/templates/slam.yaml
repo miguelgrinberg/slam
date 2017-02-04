@@ -53,3 +53,9 @@ aws:
   # list of additional inline policies for the lambda function
   lambda_inline_policies:
 
+  # additional cloudformation resources to include in the deployment
+  cfn_resources:
+
+  # additional cloudformation outputs to include in the deployment
+  cfn_outputs:
+

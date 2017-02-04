@@ -109,6 +109,14 @@ Core Options
     This entry can define additonal inline policies to be assigned to the
     Lambda function execution role.
 
+  - ``cfn_resources``
+
+    A list of additional Cloudformation resources to add to the deployment.
+
+  - ``cfn_outputs``
+
+    A list of additional Cloudformation outputs to add to the deployment.
+
 WSGI Plugin
 ===========
 

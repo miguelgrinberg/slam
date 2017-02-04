@@ -92,6 +92,7 @@ def _get_cfn_resources(config):
                 'FunctionVersion': {'Ref': stage.title() + 'Version'}
             }
         }
+    res.update(config['aws'].get('cfn_resources') or {})
     return res
 
 
@@ -100,6 +101,7 @@ def _get_cfn_outputs(config):
     outputs['FunctionArn'] = {
         'Value': {'Fn::GetAtt': ['Function', 'Arn']}
     }
+    outputs.update(config['aws'].get('cfn_outputs') or {})
     return outputs
 
 
