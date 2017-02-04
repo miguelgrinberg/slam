@@ -63,6 +63,16 @@ def _get_cfn_resources(config):
             'Runtime': 'python2.7'
         }
     }
+    if config['aws'].get('lambda_security_groups') or \
+            config['aws'].get('lambda_subnet_ids'):
+        res['FunctionExecutionRole']['Properties']['ManagedPolicyArns'].append(
+            'arn:aws:iam::aws:policy/service-role/'
+            'AWSLambdaVPCAccessExecutionRole')
+        res['Function']['Properties']['VpcConfig'] = {
+            'SecurityGroupIds':
+                config['aws'].get('lambda_security_groups') or [],
+            'SubnetIds': config['aws'].get('lambda_subnet_ids') or []
+        }
     for stage in config['stage_environments'].keys():
         res[stage.title() + 'FunctionAlias'] = {
             'Type': 'AWS::Lambda::Alias',

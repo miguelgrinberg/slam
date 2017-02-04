@@ -1,3 +1,4 @@
+from copy import deepcopy
 import mock
 import unittest
 
@@ -21,6 +22,7 @@ class CloudformationTests(unittest.TestCase):
         self.assertEqual(resources['Function']['Properties']['Timeout'], 7)
         self.assertEqual(resources['Function']['Properties']['MemorySize'],
                          512)
+        self.assertNotIn('VpcConfig', resources['Function']['Properties'])
         self.assertEqual(
             resources['DevFunctionAlias']['Properties']['FunctionVersion'],
             {'Ref': 'DevVersion'})
@@ -30,6 +32,19 @@ class CloudformationTests(unittest.TestCase):
         self.assertEqual(
             resources['ProdFunctionAlias']['Properties']['FunctionVersion'],
             {'Ref': 'ProdVersion'})
+
+    def test_resources_vpc(self):
+        vpc_config = deepcopy(config)
+        vpc_config['aws']['lambda_security_groups'] = ['sg1', 'sg2']
+        vpc_config['aws']['lambda_subnet_ids'] = ['foo', 'bar']
+        resources = cfn._get_cfn_resources(vpc_config)
+        for resource in ['FunctionExecutionRole', 'Function',
+                         'DevFunctionAlias', 'StagingFunctionAlias',
+                         'ProdFunctionAlias']:
+            self.assertIn(resource, resources)
+        self.assertEqual(resources['Function']['Properties']['VpcConfig'],
+                         {'SecurityGroupIds': ['sg1', 'sg2'],
+                          'SubnetIds': ['foo', 'bar']})
 
     def test_outputs(self):
         outputs = cfn._get_cfn_outputs(config)

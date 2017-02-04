@@ -39,3 +39,11 @@ aws:
   # memory in MB for the lambda function
   lambda_memory: {{memory}}
 
+  # list of VPC security groups for the lambda function
+  # leave empty if no VPC access is required
+  lambda_security_groups:
+
+  # list of VPC subnet IDs
+  # leave empty if no VPC access is required
+  lambda_subnet_ids:
+
