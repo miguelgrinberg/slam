@@ -48,6 +48,16 @@ def _get_cfn_resources(config):
             'Policies': []
         }
     }
+    for policy in config['aws'].get('lambda_managed_policies') or []:
+        if not policy.startswith('arn:'):
+            policy_arn = 'arn:aws:iam::aws:policy/service-role/' + policy
+        else:
+            policy_arn = policy
+        res['FunctionExecutionRole']['Properties']['ManagedPolicyArns'].append(
+            policy_arn)
+    for policy in config['aws'].get('lambda_inline_policies') or []:
+        res['FunctionExecutionRole']['Properties']['Policies'].append(
+            policy)
     res['Function'] = {
         'Type': 'AWS::Lambda::Function',
         'DependsOn': 'FunctionExecutionRole',

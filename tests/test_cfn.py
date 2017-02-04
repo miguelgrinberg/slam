@@ -46,6 +46,25 @@ class CloudformationTests(unittest.TestCase):
                          {'SecurityGroupIds': ['sg1', 'sg2'],
                           'SubnetIds': ['foo', 'bar']})
 
+    def test_resources_policies(self):
+        vpc_config = deepcopy(config)
+        vpc_config['aws']['lambda_managed_policies'] = ['arn:foo', 'bar']
+        vpc_config['aws']['lambda_inline_policies'] = [{'foo': 'bar'}]
+        resources = cfn._get_cfn_resources(vpc_config)
+        for resource in ['FunctionExecutionRole', 'Function',
+                         'DevFunctionAlias', 'StagingFunctionAlias',
+                         'ProdFunctionAlias']:
+            self.assertIn(resource, resources)
+        self.assertEqual(
+            resources['FunctionExecutionRole']['Properties']
+            ['ManagedPolicyArns'],
+            ['arn:aws:iam::aws:policy/service-role/'
+             'AWSLambdaBasicExecutionRole',
+             'arn:foo', 'arn:aws:iam::aws:policy/service-role/bar'])
+        self.assertEqual(
+            resources['FunctionExecutionRole']['Properties']['Policies'],
+            [{'foo': 'bar'}])
+
     def test_outputs(self):
         outputs = cfn._get_cfn_outputs(config)
         for output in ['FunctionArn']:

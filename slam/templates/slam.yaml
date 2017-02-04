@@ -47,3 +47,9 @@ aws:
   # leave empty if no VPC access is required
   lambda_subnet_ids:
 
+  # list of additional managed policies for the lambda function
+  lambda_managed_policies:
+
+  # list of additional inline policies for the lambda function
+  lambda_inline_policies:
+

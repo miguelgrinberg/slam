@@ -83,6 +83,32 @@ Core Options
 
     The memory size, in megabytes, for the Lambda function.
 
+  - ``lambda_security_groups``
+
+    If the Lambda function needs to access resources inside a VPC, this entry
+    must contain the list of security groups for the function to use. When VPC
+    access is not desired, this entry must be left blank.
+
+  - ``lambda_subnet_ids``
+
+    If the Lambda function needs to access resources inside a VPC, this entry
+    must contain the list of subnet IDs in that VPC that have to be connected
+    to the function. When VPC access is not desired, this entry must be left
+    blank.
+
+  - ``lambda_managed_policies``
+
+    This entry can define additional managed policies to be assigned to the
+    Lambda function execution role. These can be AWS managed policies (you can
+    provide just the policy name, such as ``AWSLambdaDynamoDBExecutionRole``),
+    or custom managed policies, for which you must provide the fully qualified
+    ARN.
+
+  - ``lambda_inline_policies``
+
+    This entry can define additonal inline policies to be assigned to the
+    Lambda function execution role.
+
 WSGI Plugin
 ===========
 
