@@ -39,6 +39,9 @@ aws:
   # memory in MB for the lambda function
   lambda_memory: {{memory}}
 
+  # the lambda runtime to use, such as python2.7 or python3.6
+  lambda_runtime: "{{runtime}}"
+
   # list of VPC security groups for the lambda function
   # leave empty if no VPC access is required
   lambda_security_groups:

@@ -70,7 +70,7 @@ def _get_cfn_resources(config):
             'Timeout': config['aws'].get('lambda_timeout', 10),
             'MemorySize': config['aws'].get('lambda_memory', 128),
             'Handler': 'handler.lambda_handler',
-            'Runtime': 'python2.7'
+            'Runtime': config['aws'].get('lambda_runtime', 'python2.7')
         }
     }
     if config['aws'].get('lambda_security_groups') or \

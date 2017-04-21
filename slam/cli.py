@@ -77,6 +77,9 @@ def _load_config(config_file='slam.yaml'):
 
 
 @main.command()
+@climax.argument('--runtime', default=None,
+                 help=('The Lambda runtime to use, such as python2.7 or '
+                       'python3.6'))
 @climax.argument('--requirements', default='requirements.txt',
                  help='The location of the project\'s requirements file.')
 @climax.argument('--stages', default='dev',
@@ -96,7 +99,7 @@ def _load_config(config_file='slam.yaml'):
                  help='The function or callable to deploy, in the format '
                       'module:function.')
 def init(name, description, bucket, timeout, memory, stages, requirements,
-         function, config_file, **kwargs):
+         function, runtime, config_file, **kwargs):
     """Generate a configuration file."""
     if os.path.exists(config_file):
         raise RuntimeError('Please delete the old version {} if you want to '
@@ -113,6 +116,12 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
 
     stages = [s.strip() for s in stages.split(',')]
 
+    if runtime is None:
+        if sys.version_info[0] == 2:  # pragma: no cover
+            runtime = 'python2.7'
+        else:
+            runtime = 'python3.6'
+
     # generate slam.yaml
     template_file = os.path.join(os.path.dirname(__file__),
                                  'templates/slam.yaml')
@@ -122,7 +131,7 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
                                module=module, app=app, bucket=bucket,
                                timeout=timeout, memory=memory,
                                requirements=requirements, stages=stages,
-                               devstage=stages[0])
+                               devstage=stages[0], runtime=runtime)
     with open(config_file, 'wt') as f:
         f.write(template)
 

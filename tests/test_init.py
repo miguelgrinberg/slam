@@ -1,5 +1,6 @@
 import mock
 import os
+import sys
 import unittest
 
 import yaml
@@ -35,6 +36,10 @@ class InitTests(unittest.TestCase):
         self.assertEqual(cfg['name'], 'app-module')
         self.assertEqual(cfg['aws']['s3_bucket'], 'app-module')
         self.assertEqual(cfg['requirements'], 'requirements.txt')
+        if sys.version_info[0] == 2:
+            self.assertEqual(cfg['aws']['lambda_runtime'], 'python2.7')
+        else:
+            self.assertEqual(cfg['aws']['lambda_runtime'], 'python3.6')
 
     def test_init_with_name(self):
         cli.main(['init', '--name', 'foo-bar', 'app_module:app'])
@@ -67,6 +72,12 @@ class InitTests(unittest.TestCase):
         self.assertEqual(cfg['devstage'], 'd')
         self.assertEqual(cfg['stage_environments'],
                          {'d': None, 's': None, 'p': None})
+
+    def test_init_with_runtime(self):
+        cli.main(['init', '--runtime', 'foo', 'app_module:app'])
+        with open('slam.yaml') as f:
+            cfg = yaml.load(f)
+        self.assertEqual(cfg['aws']['lambda_runtime'], 'foo')
 
     def test_init_with_tables(self):
         cli.main(['init', '--dynamodb-tables', 'a,b, c', 'app_module:app'])

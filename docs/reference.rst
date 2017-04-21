@@ -78,6 +78,12 @@ Optional arguments
   dependencies. If this argument is not given, slam looks for a
   *requirements.txt* file in the project's root directory.
 
+- ``--runtime RUNTIME``
+
+  The name of the Lambda runtime to use for the function. This can be either
+  ``"python2.7"`` or ``"python3.6"``. If this argument is not provided, the
+  runtime is guessed from the version of python that is being used.
+
 - ``--dynamodb-tables DYNAMODB_TABLES``
 
   A comma-separated list of DynamoDB table names to create for each stage. Once
