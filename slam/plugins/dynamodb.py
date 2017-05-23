@@ -171,7 +171,7 @@ def _get_table_resource(config, stage, name):
                 'Projection': _get_dynamodb_projection(index.get('projection'))
             }
             idxs.append(idx)
-        res['Properties']['LocalSecondaryIndexes'] = idx
+        res['Properties']['LocalSecondaryIndexes'] = idxs
     if table.get('global_secondary_indexes'):
         idxs = []
         for name, index in table['global_secondary_indexes'].items():
@@ -188,7 +188,7 @@ def _get_table_resource(config, stage, name):
                 }
             }
             idxs.append(idx)
-        res['Properties']['GlobalSecondaryIndexes'] = idx
+        res['Properties']['GlobalSecondaryIndexes'] = idxs
     return res
 
 

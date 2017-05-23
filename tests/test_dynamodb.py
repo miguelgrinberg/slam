@@ -93,16 +93,22 @@ class DynamoDBTests(unittest.TestCase):
         cfg = deepcopy(config)
         cfg['dynamodb_tables']['t1']['attributes'] = {'id': 'S', 'name': 'S'}
         cfg['dynamodb_tables']['t1']['local_secondary_indexes'] = {
-            'index1': {'key': 'foo', 'projection': 'bar'}
+            'index1': {'key': 'foo', 'projection': 'bar'},
+            'index2': {'key': 'foo2', 'projection': 'bar2'}
         }
         table = dynamodb._get_table_resource(cfg, 'dev', 't1')
-        self.assertEqual(table['Properties']['LocalSecondaryIndexes'], {
+        self.assertEqual(table['Properties']['LocalSecondaryIndexes'], [{
             'IndexName': 'index1',
             'KeySchema': 'key-schema',
             'Projection': 'projection'
-        })
+        }, {
+            'IndexName': 'index2',
+            'KeySchema': 'key-schema',
+            'Projection': 'projection'
+        }])
         _get_dynamodb_key_schema.assert_any_call('foo')
-        _get_dynamodb_projection.assert_called_once_with('bar')
+        _get_dynamodb_projection.assert_any_call('bar')
+        _get_dynamodb_projection.assert_any_call('bar2')
 
     @mock.patch('slam.plugins.dynamodb._get_dynamodb_projection',
                 return_value='projection')
@@ -117,13 +123,13 @@ class DynamoDBTests(unittest.TestCase):
                        'write_throughput': 4}
         }
         table = dynamodb._get_table_resource(cfg, 'dev', 't1')
-        self.assertEqual(table['Properties']['GlobalSecondaryIndexes'], {
+        self.assertEqual(table['Properties']['GlobalSecondaryIndexes'], [{
             'IndexName': 'index2',
             'KeySchema': 'key-schema',
             'Projection': 'projection',
             'ProvisionedThroughput': {'ReadCapacityUnits': 2,
                                       'WriteCapacityUnits': 4}
-        })
+        }])
         _get_dynamodb_key_schema.assert_any_call('foo')
         _get_dynamodb_projection.assert_called_once_with('bar')
 
