@@ -97,15 +97,16 @@ class DynamoDBTests(unittest.TestCase):
             'index2': {'key': 'foo2', 'projection': 'bar2'}
         }
         table = dynamodb._get_table_resource(cfg, 'dev', 't1')
-        self.assertEqual(table['Properties']['LocalSecondaryIndexes'], [{
+        self.assertIn({
             'IndexName': 'index1',
             'KeySchema': 'key-schema',
             'Projection': 'projection'
-        }, {
+        }, table['Properties']['LocalSecondaryIndexes'])
+        self.assertIn({
             'IndexName': 'index2',
             'KeySchema': 'key-schema',
             'Projection': 'projection'
-        }])
+        }, table['Properties']['LocalSecondaryIndexes'])
         _get_dynamodb_key_schema.assert_any_call('foo')
         _get_dynamodb_projection.assert_any_call('bar')
         _get_dynamodb_projection.assert_any_call('bar2')
