@@ -121,19 +121,19 @@ def _get_dynamodb_key_schema(key):
     return key_schema
 
 
-def _get_dynamodb_projection(projection):
-    if not projection:
+def _get_dynamodb_projection(project):
+    if not project:
         p = {
             'ProjectionType': 'KEYS_ONLY'
         }
-    elif projection == 'all':
+    elif project == 'all':
         p = {
             'ProjectionType': 'ALL'
         }
     else:
         p = {
             'ProjectionType': 'INCLUDE',
-            'NonKeyAttributes': projection
+            'NonKeyAttributes': project
         }
     return p
 
@@ -168,7 +168,7 @@ def _get_table_resource(config, stage, name):
             idx = {
                 'IndexName': name,
                 'KeySchema': _get_dynamodb_key_schema(index['key']),
-                'Projection': _get_dynamodb_projection(index.get('projection'))
+                'Projection': _get_dynamodb_projection(index.get('project'))
             }
             idxs.append(idx)
         res['Properties']['LocalSecondaryIndexes'] = idxs
@@ -181,7 +181,7 @@ def _get_table_resource(config, stage, name):
                 'IndexName': name,
                 'KeySchema': _get_dynamodb_key_schema(index['key']),
                 'Projection': _get_dynamodb_projection(
-                    index.get('projection')),
+                    index.get('project')),
                 'ProvisionedThroughput': {
                     'ReadCapacityUnits': read_units,
                     'WriteCapacityUnits': write_units

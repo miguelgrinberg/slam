@@ -93,8 +93,8 @@ class DynamoDBTests(unittest.TestCase):
         cfg = deepcopy(config)
         cfg['dynamodb_tables']['t1']['attributes'] = {'id': 'S', 'name': 'S'}
         cfg['dynamodb_tables']['t1']['local_secondary_indexes'] = {
-            'index1': {'key': 'foo', 'projection': 'bar'},
-            'index2': {'key': 'foo2', 'projection': 'bar2'}
+            'index1': {'key': 'foo', 'project': 'bar'},
+            'index2': {'key': 'foo2', 'project': 'bar2'}
         }
         table = dynamodb._get_table_resource(cfg, 'dev', 't1')
         self.assertIn({
@@ -120,7 +120,7 @@ class DynamoDBTests(unittest.TestCase):
         cfg = deepcopy(config)
         cfg['dynamodb_tables']['t1']['attributes'] = {'id': 'S', 'name': 'S'}
         cfg['dynamodb_tables']['t1']['global_secondary_indexes'] = {
-            'index2': {'key': 'foo', 'projection': 'bar', 'read_throughput': 2,
+            'index2': {'key': 'foo', 'project': 'bar', 'read_throughput': 2,
                        'write_throughput': 4}
         }
         table = dynamodb._get_table_resource(cfg, 'dev', 't1')
