@@ -290,8 +290,12 @@ def _print_status(config):
                     for s, status in statuses.items():
                         plugin_status.setdefault(s, []).append(status)
         for s in stages:
-            fd = lmb.get_function(FunctionName=_get_from_stack(
-                 stack, 'Output', 'FunctionArn'), Qualifier=s)
+            fd = None
+            try:
+                fd = lmb.get_function(FunctionName=_get_from_stack(
+                    stack, 'Output', 'FunctionArn'), Qualifier=s)
+            except botocore.exceptions.ClientError:
+                continue
             v = ':{}'.format(fd['Configuration']['Version'])
             if s in plugin_status and len(plugin_status[s]) > 0:
                 print('    {}{}: {}'.format(s, v,
