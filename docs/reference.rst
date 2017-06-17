@@ -310,7 +310,7 @@ Example
 
 ::
 
-  $ slam invoke number:15
+  $ slam invoke number:=15
   fizzbuzz
 
   $ slam invoke name=john age:=34

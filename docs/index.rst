@@ -19,6 +19,7 @@ compliant applications.
 
    about
    tutorial
+   tutorial2
    reference
    configuration
    plugins
