@@ -215,6 +215,7 @@ def status(config, stack):
 
 
 def run_lambda_function(event, context, app, config):  # pragma: no cover
+    import base64
     from io import BytesIO
     import sys
     try:
@@ -280,8 +281,17 @@ def run_lambda_function(event, context, app, config):  # pragma: no cover
     # format the response as required by the api gateway proxy integration
     status = status_headers[0].split()
     headers = status_headers[1]
+    body = b''.join(body)
+    try:
+        body = body.decode('utf-8')
+        b64 = False
+    except UnicodeDecodeError:
+        body = base64.b64encode(body).decode('utf-8')
+        b64 = True
+
     return {
         'statusCode': int(status[0]),
         'headers': {h[0]: h[1] for h in headers},
-        'body': b''.join(body)
+        'body': body,
+        'isBase64Encoded': b64
     }

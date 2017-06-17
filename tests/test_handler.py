@@ -119,7 +119,17 @@ class HandlerTests(unittest.TestCase):
         app.body = [b'foo', b'bar']
         rv = lambda_handler({'body': 'foo'}, self.context)
         self.assertEqual(app.environ['wsgi.input'].read(), b'foo')
-        self.assertEqual(rv['body'], b'bazfoobar')
+        self.assertEqual(rv['body'], 'bazfoobar')
+        self.assertFalse(rv['isBase64Encoded'])
+
+    def test_body_binary(self):
+        from slam._handler import lambda_handler
+        app.write = b'baz\x88'
+        app.body = [b'foo\x99', b'\xaabar']
+        rv = lambda_handler({'body': 'foo'}, self.context)
+        self.assertEqual(app.environ['wsgi.input'].read(), b'foo')
+        self.assertEqual(rv['body'], 'YmF6iGZvb5mqYmFy')
+        self.assertTrue(rv['isBase64Encoded'])
 
     def test_headers(self):
         from slam._handler import lambda_handler
@@ -153,4 +163,4 @@ class HandlerTests(unittest.TestCase):
         app.write = None
         app.body = g()
         rv = lambda_handler({}, self.context)
-        self.assertEqual(rv['body'], b'foobarbaz')
+        self.assertEqual(rv['body'], 'foobarbaz')
