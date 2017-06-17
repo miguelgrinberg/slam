@@ -107,10 +107,13 @@ project to AWS with the ``slam deploy`` command::
 
     (venv) $ slam deploy
     Building lambda package...
-    Deploying simple-api...
-    simple-api is deployed!
-      dev:$LATEST: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
-      prod:$LATEST: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
+    Deploying tasks-api...
+    tasks-api is deployed!
+      Function name: tasks-api-Function-1D55AHXPNB02D
+      S3 bucket: tasks-api-MHPGRXBK
+      Stages:
+        dev:$LATEST: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
+        prod:$LATEST: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
 
 The deployment process can take between one and two minutes. After the command
 finishes, you will have the API deployed!
@@ -139,10 +142,13 @@ To publish the version of the API deployed in the previous section to the
 ``prod`` stage, the ``slam publish`` command is used::
 
     (venv) $ slam publish prod
-    Publishing simple-api:dev to prod...
-    simple-api is deployed!
-      dev:$LATEST: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
-      prod:1: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
+    Publishing tasks-api:dev to prod...
+    tasks-api is deployed!
+      Function name: tasks-api-Function-1D55AHXPNB02D
+      S3 bucket: tasks-api-MHPGRXBK
+      Stages:
+        dev:$LATEST: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
+        prod:1: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
 
 Note that after the publish command completes, the ``prod`` stage is shown as
 ``prod:1``, indicating that this stage is running version 1.
@@ -161,9 +167,12 @@ The status report that is shown after the deploy or publish commands run can
 also be requested on its own using the ``slam status`` command::
 
     (venv) $ slam status
-    simple-api is deployed!
-      dev: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
-      prod:1: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
+    tasks-api is deployed!
+      Function name: tasks-api-Function-1D55AHXPNB02D
+      S3 bucket: tasks-api-MHPGRXBK
+      Stages:
+        dev: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/dev
+        prod:1: https://ukhhy78b6a.execute-api.us-west-2.amazonaws.com/prod
 
 Deleting the Project
 ====================
@@ -177,8 +186,9 @@ Alternatively, you can use the ``slam delete`` command, which performs the
 above two tasks for you::
 
     (venv) $ slam delete
-    Deleting API...
-    simple-api has been deleted.
+    Deleting tasks-api...
+    Deleting logs...
+    Deleting files...
 
 The End
 =======

@@ -34,7 +34,7 @@ class InitTests(unittest.TestCase):
         self.assertEqual(cfg['devstage'], 'dev')
         self.assertEqual(cfg['stage_environments'], {'dev': None})
         self.assertEqual(cfg['name'], 'app-module')
-        self.assertEqual(cfg['aws']['s3_bucket'], 'app-module')
+        self.assertTrue(cfg['aws']['s3_bucket'].startswith('app-module-'))
         self.assertEqual(cfg['requirements'], 'requirements.txt')
         if sys.version_info[0] == 2:
             self.assertEqual(cfg['aws']['lambda_runtime'], 'python2.7')
@@ -48,7 +48,7 @@ class InitTests(unittest.TestCase):
         self.assertEqual(cfg['function']['module'], 'app_module')
         self.assertEqual(cfg['function']['app'], 'app')
         self.assertEqual(cfg['name'], 'foo-bar')
-        self.assertEqual(cfg['aws']['s3_bucket'], 'foo-bar')
+        self.assertTrue(cfg['aws']['s3_bucket'].startswith('foo-bar-'))
 
     def test_init_with_bucket(self):
         cli.main(['init', '--bucket', 'foo-bar', 'app_module:app'])

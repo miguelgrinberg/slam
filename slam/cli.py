@@ -9,9 +9,11 @@ try:
     import pkg_resources
 except ImportError:  # pragma: no cover
     pkg_resources = None
+import random
 import re
 import subprocess
 import shutil
+import string
 import sys
 import time
 
@@ -112,7 +114,10 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
         raise ValueError('The name {} is invalid, only letters, numbers and '
                          'dashes are allowed.'.format(name))
     if not bucket:
-        bucket = name
+        random_suffix = ''.join(
+            random.choice(string.ascii_uppercase + string.digits)
+            for n in range(8))
+        bucket = '{}-{}'.format(name, random_suffix)
 
     stages = [s.strip() for s in stages.split(',')]
 
@@ -279,6 +284,7 @@ def _print_status(config):
         print('{} is deployed!'.format(config['name']))
         print('  Function name: {}'.format(
             _get_from_stack(stack, 'Output', 'FunctionArn').split(':')[-1]))
+        print('  S3 bucket: {}'.format(config['aws']['s3_bucket']))
         print('  Stages:')
         stages = list(config['stage_environments'].keys())
         stages.sort()
@@ -294,7 +300,7 @@ def _print_status(config):
             try:
                 fd = lmb.get_function(FunctionName=_get_from_stack(
                     stack, 'Output', 'FunctionArn'), Qualifier=s)
-            except botocore.exceptions.ClientError:
+            except botocore.exceptions.ClientError:  # pragma: no cover
                 continue
             v = ':{}'.format(fd['Configuration']['Version'])
             if s in plugin_status and len(plugin_status[s]) > 0:

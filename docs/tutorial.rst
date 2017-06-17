@@ -114,6 +114,7 @@ to AWS with the ``slam deploy`` command::
     Deploying fizzbuzz:dev...
     fizzbuzz is deployed!
       Function name: fizzbuzz-Function-1CUMOX2834PA0
+      S3 bucket: fizzbuzz-J5FTHI40
       Stages:
         dev:$LATEST
 
@@ -180,8 +181,9 @@ As a convenience to users, there is a ``slam delete`` command that performs the
 above two tasks for you::
 
     (venv) $ slam delete
-    Deleting API...
-    fizzbuzz has been deleted.
+    Deleting fizzbuzz...
+    Deleting logs...
+    Deleting files...
 
 Congratulations! You have reached the end of this first tutorial. The second
 tutorial covers more advanced usages that include the deployment of a REST API

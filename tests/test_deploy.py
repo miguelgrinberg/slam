@@ -111,6 +111,7 @@ class DeployTests(unittest.TestCase):
         output = ''.join([c[0][0] + '\n' for c in mock_print.call_args_list])
         self.assertEqual(output, ('foo is deployed!\n'
                                   '  Function name: foo\n'
+                                  '  S3 bucket: bucket\n'
                                   '  Stages:\n'
                                   '    dev:$LATEST\n'
                                   '    prod:23\n'
@@ -143,6 +144,7 @@ class DeployTests(unittest.TestCase):
         output = ''.join([c[0][0] + '\n' for c in mock_print.call_args_list])
         self.assertEqual(output, ('foo is deployed!\n'
                                   '  Function name: foo\n'
+                                  '  S3 bucket: bucket\n'
                                   '  Stages:\n'
                                   '    dev:$LATEST: https://a.com\n'
                                   '    prod:23: https://b.com\n'
@@ -171,6 +173,7 @@ class DeployTests(unittest.TestCase):
         output = ''.join([c[0][0] + '\n' for c in mock_print.call_args_list])
         self.assertEqual(output, ('foo is deployed!\n'
                                   '  Function name: foo\n'
+                                  '  S3 bucket: bucket\n'
                                   '  Stages:\n'
                                   '    dev:$LATEST\n'
                                   '    prod:23\n'
