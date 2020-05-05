@@ -115,9 +115,9 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
                          'dashes are allowed.'.format(name))
     if not bucket:
         random_suffix = ''.join(
-            random.choice(string.ascii_uppercase + string.digits)
+            random.choice(string.ascii_lowercase + string.digits)
             for n in range(8))
-        bucket = '{}-{}'.format(name, random_suffix)
+        bucket = '{}-{}'.format(name.lower(), random_suffix)
 
     stages = [s.strip() for s in stages.split(',')]
 
@@ -512,11 +512,11 @@ def publish(version, stage, config_file):
                       'structures.')
 @climax.argument('--dry-run', action='store_true',
                  help='Just check that the function can be invoked.')
-@climax.argument('--async', action='store_true',
+@climax.argument('--nowait', action='store_true',
                  help='Invoke the function but don\'t wait for it to return.')
 @climax.argument('--stage', help='Stage of the invoked function. Defaults to '
                                  'the development stage')
-def invoke(stage, async, dry_run, config_file, args):
+def invoke(stage, nowait, dry_run, config_file, args):
     """Invoke the lambda function."""
     config = _load_config(config_file)
     if stage is None:
@@ -533,7 +533,7 @@ def invoke(stage, async, dry_run, config_file, args):
 
     if dry_run:
         invocation_type = 'DryRun'
-    elif async:
+    elif nowait:
         invocation_type = 'Event'
     else:
         invocation_type = 'RequestResponse'

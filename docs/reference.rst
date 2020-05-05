@@ -289,7 +289,7 @@ Optional arguments
 
   The stage on which to run the function. Defaults to the development stage.
 
-- ``--async``
+- ``--nowait``
 
   Invoke the function, but don't wait for it to run.
 
