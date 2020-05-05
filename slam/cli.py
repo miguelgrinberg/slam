@@ -115,9 +115,9 @@ def init(name, description, bucket, timeout, memory, stages, requirements,
                          'dashes are allowed.'.format(name))
     if not bucket:
         random_suffix = ''.join(
-            random.choice(string.ascii_uppercase + string.digits)
+            random.choice(string.ascii_lowercase + string.digits)
             for n in range(8))
-        bucket = '{}-{}'.format(name, random_suffix)
+        bucket = '{}-{}'.format(name.lower(), random_suffix)
 
     stages = [s.strip() for s in stages.split(',')]
 
