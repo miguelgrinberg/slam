@@ -94,7 +94,7 @@ class InvokeTests(unittest.TestCase):
 
     @mock.patch('slam.cli.boto3.client')
     @mock.patch('slam.cli._load_config', return_value=config)
-    def test_invoke_async(self, _load_config, client):
+    def test_invoke_nowait(self, _load_config, client):
         mock_cfn = mock.MagicMock()
         mock_lmb = mock.MagicMock()
         mock_cfn.describe_stacks.return_value = describe_stacks_response
@@ -102,7 +102,7 @@ class InvokeTests(unittest.TestCase):
                                         'Payload': BytesIO(b'')}
         client.side_effect = [mock_cfn, mock_lmb]
 
-        cli.main(['invoke', '--async'])
+        cli.main(['invoke', '--nowait'])
         mock_cfn.describe_stacks.assert_called_once_with(StackName='foo')
         mock_lmb.invoke.assert_called_once_with(
             FunctionName='arn:lambda:foo', InvocationType='Event',
