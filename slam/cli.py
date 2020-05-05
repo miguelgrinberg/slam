@@ -215,12 +215,12 @@ def _generate_lambda_handler(config, output='.slam/handler.py'):
 
 def _build(config, rebuild_deps=False):
     package = datetime.utcnow().strftime("lambda_package.%Y%m%d_%H%M%S.zip")
-    ignore = ['\.slam\/venv\/.*$', '\.pyc$']
+    ignore = ['\\.slam\\/venv\\/.*$', '\\.pyc$']
     if os.environ.get('VIRTUAL_ENV'):
         # make sure the currently active virtualenv is not included in the pkg
         venv = os.path.relpath(os.environ['VIRTUAL_ENV'], os.getcwd())
         if not venv.startswith('.'):
-            ignore.append(venv.replace('/', '\/') + '\/.*$')
+            ignore.append(venv.replace('/', '\\/') + '\\/.*$')
 
     # create .slam directory if it doesn't exist yet
     if not os.path.exists('.slam'):
@@ -684,22 +684,24 @@ def logs(stage, period, tail, config_file):
         for log_group in log_groups:
             while True:
                 try:
-                    l = logs.filter_log_events(logGroupName=log_group,
-                                               startTime=log_start[log_group],
-                                               interleaved=True, **kwargs)
+                    filtered_logs = logs.filter_log_events(
+                        logGroupName=log_group,
+                        startTime=log_start[log_group],
+                        interleaved=True, **kwargs)
                 except botocore.exceptions.ClientError:
                     # the log group does not exist yet
-                    l = {'events': []}
+                    filtered_logs = {'events': []}
                 if log_group == lambda_log_group:
-                    events += [ev for ev in l['events']
+                    events += [ev for ev in filtered_logs['events']
                                if log_version in ev['logStreamName']]
                 else:
-                    events += l['events']
-                if len(l['events']):
-                    log_start[log_group] = l['events'][-1]['timestamp'] + 1
-                if 'nextToken' not in l:
+                    events += filtered_logs['events']
+                if len(filtered_logs['events']):
+                    log_start[log_group] = \
+                        filtered_logs['events'][-1]['timestamp'] + 1
+                if 'nextToken' not in filtered_logs:
                     break
-                kwargs['nextToken'] = l['nextToken']
+                kwargs['nextToken'] = filtered_logs['nextToken']
         events.sort(key=lambda ev: ev['timestamp'])
         for ev in events:
             tm = datetime.fromtimestamp(ev['timestamp'] / 1000)
