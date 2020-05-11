@@ -28,7 +28,7 @@ class InitTests(unittest.TestCase):
     def test_init_with_defaults(self):
         cli.main(['init', 'app_module:app'])
         with open('slam.yaml') as f:
-            cfg = yaml.load(f)
+            cfg = yaml.load(f, Loader=yaml.FullLoader)
         self.assertEqual(cfg['function']['module'], 'app_module')
         self.assertEqual(cfg['function']['app'], 'app')
         self.assertEqual(cfg['devstage'], 'dev')
@@ -44,7 +44,7 @@ class InitTests(unittest.TestCase):
     def test_init_with_name(self):
         cli.main(['init', '--name', 'foo-bar', 'app_module:app'])
         with open('slam.yaml') as f:
-            cfg = yaml.load(f)
+            cfg = yaml.load(f, Loader=yaml.FullLoader)
         self.assertEqual(cfg['function']['module'], 'app_module')
         self.assertEqual(cfg['function']['app'], 'app')
         self.assertEqual(cfg['name'], 'foo-bar')
@@ -53,7 +53,7 @@ class InitTests(unittest.TestCase):
     def test_init_with_bucket(self):
         cli.main(['init', '--bucket', 'foo-bar', 'app_module:app'])
         with open('slam.yaml') as f:
-            cfg = yaml.load(f)
+            cfg = yaml.load(f, Loader=yaml.FullLoader)
         self.assertEqual(cfg['function']['module'], 'app_module')
         self.assertEqual(cfg['function']['app'], 'app')
         self.assertEqual(cfg['name'], 'app-module')
@@ -62,13 +62,13 @@ class InitTests(unittest.TestCase):
     def test_init_with_requirements(self):
         cli.main(['init', '--requirements', 'foo.txt', 'app_module:app'])
         with open('slam.yaml') as f:
-            cfg = yaml.load(f)
+            cfg = yaml.load(f, Loader=yaml.FullLoader)
         self.assertEqual(cfg['requirements'], 'foo.txt')
 
     def test_init_with_stages(self):
         cli.main(['init', '--stages', 'd,s, p', 'app_module:app'])
         with open('slam.yaml') as f:
-            cfg = yaml.load(f)
+            cfg = yaml.load(f, Loader=yaml.FullLoader)
         self.assertEqual(cfg['devstage'], 'd')
         self.assertEqual(cfg['stage_environments'],
                          {'d': None, 's': None, 'p': None})
@@ -76,13 +76,13 @@ class InitTests(unittest.TestCase):
     def test_init_with_runtime(self):
         cli.main(['init', '--runtime', 'foo', 'app_module:app'])
         with open('slam.yaml') as f:
-            cfg = yaml.load(f)
+            cfg = yaml.load(f, Loader=yaml.FullLoader)
         self.assertEqual(cfg['aws']['lambda_runtime'], 'foo')
 
     def test_init_with_tables(self):
         cli.main(['init', '--dynamodb-tables', 'a,b, c', 'app_module:app'])
         with open('slam.yaml') as f:
-            cfg = yaml.load(f)
+            cfg = yaml.load(f, Loader=yaml.FullLoader)
         t = {'attributes': {'id': 'S'}, 'key': 'id',
              'read_throughput': 1, 'write_throughput': 1}
         self.assertEqual(cfg['dynamodb_tables'], {'a': t, 'b': t, 'c': t})

@@ -71,7 +71,7 @@ def on_unexpected_error(e):  # pragma: no cover
 def _load_config(config_file='slam.yaml'):
     try:
         with open(config_file) as f:
-            return yaml.load(f)
+            return yaml.load(f, Loader=yaml.FullLoader)
     except IOError:
         # there is no config file in the current directory
         raise RuntimeError('Config file {} not found. Did you run '
