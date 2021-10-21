@@ -1,4 +1,4 @@
-Babel==2.3.4
+Babel==2.9.1
 boto3==1.4.3
 botocore==1.4.93
 click==6.6
